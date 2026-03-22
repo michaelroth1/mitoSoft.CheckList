@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private int _currentIndex = -1;
     private bool _isTabletMode = false;
     private UiModeManager? _uiModeManager;
+    private CameraService? _cameraService;
 
     public MainWindow()
     {
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
         if (!System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
         {
             _uiModeManager = new UiModeManager(this);
+            _cameraService = new CameraService();
             _uiModeManager.ApplyMode(false);
             ClearWizard();
             UpdateButtonState();
@@ -196,10 +198,9 @@ public partial class MainWindow : Window
     {
         if (sender is System.Windows.Controls.TextBox tb && tb.Tag is int idx)
         {
-            var cur = _plan!.Steps[_currentIndex];
-            if (idx < 0 || idx >= cur.Tasks.Count) return;
+            if (!ValidateTaskIndex(idx)) return;
 
-            var task = cur.Tasks[idx];
+            var task = _plan!.Steps[_currentIndex].Tasks[idx];
             task.UserInput = tb.Text;
             task.Done = !string.IsNullOrWhiteSpace(tb.Text);
         }
@@ -207,8 +208,9 @@ public partial class MainWindow : Window
 
     private void Link_Click(int taskIndex)
     {
-        var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
+        if (!ValidateTaskIndex(taskIndex)) return;
 
+        var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
         var file = new FileInfo(task.PhotoPath!);
         file.TryShowPhoto();
     }
@@ -217,9 +219,9 @@ public partial class MainWindow : Window
     {
         if (sender is WpfCheckBox chk && chk.Tag is int idx)
         {
-            var cur = _plan!.Steps[_currentIndex];
-            if (idx < 0 || idx >= cur.Tasks.Count) return;
-            var task = cur.Tasks[idx];
+            if (!ValidateTaskIndex(idx)) return;
+
+            var task = _plan!.Steps[_currentIndex].Tasks[idx];
 
             // If Photo task and user checked it, start photo flow
             if (chk.IsChecked == true
@@ -265,185 +267,34 @@ public partial class MainWindow : Window
 
     private void AttachPhotoToTask(int taskIndex, bool requireCamera)
     {
-        if (_currentIndex < 0 || _currentIndex >= _plan!.Steps.Count) return;
+        if (!ValidateTaskIndex(taskIndex)) return;
 
-        var currentStep = _plan.Steps[_currentIndex];
-        if (taskIndex < 0 || taskIndex >= currentStep.Tasks.Count) return;
+        var selectedTask = _plan!.Steps[_currentIndex].Tasks[taskIndex];
+        var photoPath = _cameraService!.CapturePhotoFromCamera(status => lblStatus.Text = status);
 
-        var selectedTask = currentStep.Tasks[taskIndex];
-
-        var planName = "UnnamedPlan";
-        if (!string.IsNullOrEmpty(_plan.Path))
+        if (!string.IsNullOrEmpty(photoPath))
         {
-            planName = _plan.Path
-                .ToFileInfo()
-                .GetFileNameWithoutExtension();
+            UpdateTaskWithPhoto(taskIndex, selectedTask, photoPath);
         }
-        else if (!string.IsNullOrEmpty(currentStep.Title))
-        {
-            planName = currentStep.Title.Replace(' ', '_');
-        }
+    }
 
-        string? chosenPath = null;
+    private bool ValidateTaskIndex(int taskIndex)
+    {
+        return _plan != null
+            && _currentIndex >= 0 
+            && _currentIndex < _plan.Steps.Count 
+            && taskIndex >= 0 
+            && taskIndex < _plan.Steps[_currentIndex].Tasks.Count;
+    }
 
+    private void UpdateTaskWithPhoto(int taskIndex, MaintenanceTask task, string photoPath)
+    {
         try
         {
-            var startUtc = DateTime.UtcNow;
-            var picRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            var candidateDirs = new List<string>
-            {
-                Path.Combine(picRoot, "Camera Roll"),
-                Path.Combine(picRoot, "Saved Pictures"),
-                picRoot
-            };
-            var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var d in candidateDirs)
-            {
-                if (Directory.Exists(d))
-                {
-                    foreach (var f in Directory.GetFiles(d)) existing.Add(f);
-                }
-            }
+            task.PhotoPath = photoPath;
+            task.Done = true;
 
-            var psi = new System.Diagnostics.ProcessStartInfo("microsoft.windows.camera:") { UseShellExecute = true };
-            System.Diagnostics.Process? camProc = null;
-            try
-            {
-                camProc = System.Diagnostics.Process.Start(psi);
-            }
-            catch
-            {
-                camProc = null;
-            }
-            lblStatus.Text = "Kamera gestartet — Foto aufnehmen. Warte auf neues Foto...";
-
-            string? found = null;
-            var timeout = TimeSpan.FromSeconds(30);
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (sw.Elapsed < timeout)
-            {
-                if (camProc != null)
-                {
-                    try
-                    {
-                        if (camProc.HasExited)
-                        {
-                            found = null;
-                            lblStatus.Text = "Kamera-App wurde geschlossen. Vorgang abgebrochen.";
-                            break;
-                        }
-                    }
-                    catch { }
-                }
-                else
-                {
-                    try
-                    {
-                        var cams = System.Diagnostics.Process.GetProcessesByName("WindowsCamera");
-                        if (cams.Length == 0)
-                        {
-                            found = null;
-                            lblStatus.Text = "Kamera-App wurde nicht gefunden/geschlossen. Vorgang abgebrochen.";
-                            break;
-                        }
-                    }
-                    catch { }
-                }
-
-                foreach (var d in candidateDirs)
-                {
-                    if (!Directory.Exists(d)) continue;
-
-                    foreach (var f in Directory.GetFiles(d))
-                    {
-                        if (existing.Contains(f)) continue;
-                        try
-                        {
-                            var write = File.GetLastWriteTimeUtc(f);
-                            if (write >= startUtc.AddSeconds(-2))
-                            {
-                                found = f;
-                                break;
-                            }
-                        }
-                        catch { }
-                    }
-
-                    if (found != null) break;
-                }
-
-                if (found != null) break;
-                System.Threading.Thread.Sleep(500);
-                WpfApplication.Current.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-
-            if (found == null)
-            {
-                lblStatus.Text = "Kein neues Foto automatisch gefunden — bitte Datei wählen.";
-                var ofd = new WpfOpenFileDialog
-                {
-                    InitialDirectory = picRoot,
-                    Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp|All files|*.*"
-                };
-                if (ofd.ShowDialog() != true)
-                {
-                    lblStatus.Text = string.Empty;
-                    return;
-                }
-                chosenPath = ofd.FileName;
-            }
-            else
-            {
-                chosenPath = found;
-                lblStatus.Text = "Neues Foto automatisch gefunden.";
-            }
-        }
-        catch (Exception ex)
-        {
-            WpfMessageBox.Show($"Kamera konnte nicht gestartet werden: {ex.Message}", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        if (string.IsNullOrEmpty(chosenPath)) return;
-
-        try
-        {
-            selectedTask.PhotoPath = chosenPath;
-            selectedTask.Done = true;
-
-            foreach (var panel in spTasks.Children.OfType<StackPanel>())
-            {
-                WpfCheckBox? foundChk = null;
-                TextBlock? foundLink = null;
-
-                foreach (var child in panel.Children)
-                {
-                    if (child is WpfCheckBox cb && cb.Tag is int tag && tag == taskIndex)
-                    {
-                        foundChk = cb;
-                    }
-                    if (child is TextBlock tb && tb.Tag is int ltag && ltag == taskIndex)
-                    {
-                        foundLink = tb;
-                    }
-                }
-
-                if (foundChk != null)
-                {
-                    foundChk.Checked -= TaskCheck_Changed;
-                    foundChk.Unchecked -= TaskCheck_Changed;
-                    foundChk.IsChecked = true;
-                    foundChk.Checked += TaskCheck_Changed;
-                    foundChk.Unchecked += TaskCheck_Changed;
-
-                    if (foundLink == null)
-                    {
-                        var link = _uiModeManager!.CreatePhotoLink(taskIndex, chosenPath, Link_Click);
-                        panel.Children.Add(link);
-                    }
-                }
-            }
+            UpdatePhotoTaskUI(taskIndex, photoPath);
 
             lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
             UpdateButtonState();
@@ -452,6 +303,42 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show($"Fehler beim Vermerken des Fotos: {ex.Message}", "Fehler",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void UpdatePhotoTaskUI(int taskIndex, string photoPath)
+    {
+        foreach (var panel in spTasks.Children.OfType<StackPanel>())
+        {
+            WpfCheckBox? checkbox = null;
+            TextBlock? photoLink = null;
+
+            foreach (var child in panel.Children)
+            {
+                if (child is WpfCheckBox cb && cb.Tag is int tag && tag == taskIndex)
+                {
+                    checkbox = cb;
+                }
+                if (child is TextBlock tb && tb.Tag is int ltag && ltag == taskIndex)
+                {
+                    photoLink = tb;
+                }
+            }
+
+            if (checkbox != null)
+            {
+                checkbox.Checked -= TaskCheck_Changed;
+                checkbox.Unchecked -= TaskCheck_Changed;
+                checkbox.IsChecked = true;
+                checkbox.Checked += TaskCheck_Changed;
+                checkbox.Unchecked += TaskCheck_Changed;
+
+                if (photoLink == null)
+                {
+                    var link = _uiModeManager!.CreatePhotoLink(taskIndex, photoPath, Link_Click);
+                    panel.Children.Add(link);
+                }
+            }
         }
     }
 
@@ -650,28 +537,11 @@ public partial class MainWindow : Window
             System.Threading.Thread.Sleep(500);
             Directory.CreateDirectory(exportFolder);
 
-            var photosDir = Path.Combine(exportFolder, "Photos");
-            Directory.CreateDirectory(photosDir);
-
-            foreach (var step in _plan.Steps)
-            {
-                foreach (var task in step.Tasks)
-                {
-                    if (!string.IsNullOrEmpty(task.PhotoPath) && File.Exists(task.PhotoPath))
-                    {
-                        try
-                        {
-                            var dest = Path.Combine(photosDir, Path.GetFileName(task.PhotoPath));
-                            File.Copy(task.PhotoPath, dest, true);
-                        }
-                        catch { }
-                    }
-                }
-            }
+            CopyPhotos(exportFolder);
 
             var pdfPath = Path.Combine(exportFolder, "Wartungsbericht.pdf");
             var exporter = new PdfExporter(pdfPath);
-            exporter.Export(_plan, "Wartungsbericht");
+            exporter.Export(_plan!, "Wartungsbericht");
 
             WpfMessageBox.Show("Export abgeschlossen.", "Export",
                 MessageBoxButton.OK, MessageBoxImage.Information);
@@ -683,158 +553,101 @@ public partial class MainWindow : Window
         }
     }
 
-    private void btnAttachPhoto_Click(object sender, RoutedEventArgs e)
+    private void CopyPhotos(string exportFolder)
     {
-        if (_plan == null || _currentIndex < 0 || _currentIndex >= _plan.Steps.Count) return;
+        var photosDir = Path.Combine(exportFolder, "Photos");
+        Directory.CreateDirectory(photosDir);
 
-        var cur = _plan.Steps[_currentIndex];
-
-        // Find selected checkbox
-        int selIndex = -1;
-        foreach (var panel in spTasks.Children.OfType<StackPanel>())
+        foreach (var step in _plan!.Steps)
         {
-            foreach (var child in panel.Children)
+            foreach (var task in step.Tasks)
             {
-                if (child is WpfCheckBox cb && cb.IsFocused && cb.Tag is int tag)
+                if (!string.IsNullOrEmpty(task.PhotoPath) && File.Exists(task.PhotoPath))
                 {
-                    selIndex = tag;
-                    break;
+                    try
+                    {
+                        var dest = Path.Combine(photosDir, Path.GetFileName(task.PhotoPath));
+                        File.Copy(task.PhotoPath, dest, true);
+                    }
+                    catch { }
                 }
             }
-            if (selIndex != -1) break;
         }
+    }
 
-        if (selIndex < 0 || selIndex >= cur.Tasks.Count)
+    private void btnAttachPhoto_Click(object sender, RoutedEventArgs e)
+    {
+        int selIndex = FindSelectedTaskIndex();
+
+        if (!ValidateTaskIndex(selIndex))
         {
             WpfMessageBox.Show("Bitte zuerst eine Aufgabe auswählen.", "Foto anhängen",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        var selectedTask = cur.Tasks[selIndex];
+        var selectedTask = _plan!.Steps[_currentIndex].Tasks[selIndex];
+        var saveDirectory = GetPhotoSaveDirectory();
 
+        var useCamera = WpfMessageBox.Show("Foto aufnehmen mit Kamera? (Nein = Aus Datei wählen)", "Fotoquelle",
+            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+        if (useCamera == MessageBoxResult.Cancel) return;
+
+        string? sourcePath = useCamera == MessageBoxResult.Yes
+            ? _cameraService!.CapturePhotoFromCamera(status => lblStatus.Text = status)
+            : _cameraService!.SelectPhotoFromFile(updateStatus: status => lblStatus.Text = status);
+
+        if (string.IsNullOrEmpty(sourcePath)) return;
+
+        SavePhotoToTaskDirectory(sourcePath, saveDirectory, selectedTask);
+    }
+
+    private int FindSelectedTaskIndex()
+    {
+        foreach (var panel in spTasks.Children.OfType<StackPanel>())
+        {
+            foreach (var child in panel.Children)
+            {
+                if (child is WpfCheckBox cb && cb.IsFocused && cb.Tag is int tag)
+                {
+                    return tag;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private string GetPhotoSaveDirectory()
+    {
+        var currentStep = _plan!.Steps[_currentIndex];
         var planName = "UnnamedPlan";
+
         if (!string.IsNullOrEmpty(_plan.Path))
         {
-            planName = _plan.Path
-                .ToFileInfo()
-                .GetFileNameWithoutExtension();
+            planName = _plan.Path.ToFileInfo().GetFileNameWithoutExtension();
         }
-        else if (!string.IsNullOrEmpty(cur.Title))
+        else if (!string.IsNullOrEmpty(currentStep.Title))
         {
-            planName = cur.Title.Replace(' ', '_');
+            planName = currentStep.Title.Replace(' ', '_');
         }
 
         var datePart = DateTime.Now.ToString("yyyy-MM-dd");
-        var rootDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Records", datePart + "_" + planName);
+        var directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Records", datePart + "_" + planName);
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
 
-        Directory.CreateDirectory(rootDir);
-
-        var res = WpfMessageBox.Show("Foto aufnehmen mit Kamera? (Nein = Aus Datei wählen)", "Fotoquelle",
-            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-        if (res == MessageBoxResult.Cancel) return;
-
-        string? chosenPath = null;
-        if (res == MessageBoxResult.Yes)
-        {
-            try
-            {
-                var startUtc = DateTime.UtcNow;
-                var picRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-                var candidateDirs = new List<string>
-                {
-                    Path.Combine(picRoot, "Camera Roll"),
-                    Path.Combine(picRoot, "Saved Pictures"),
-                    picRoot
-                };
-                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var d in candidateDirs)
-                {
-                    if (Directory.Exists(d))
-                    {
-                        foreach (var f in Directory.GetFiles(d)) existing.Add(f);
-                    }
-                }
-
-                var psi = new System.Diagnostics.ProcessStartInfo("microsoft.windows.camera:") { UseShellExecute = true };
-                System.Diagnostics.Process.Start(psi);
-                lblStatus.Text = "Kamera gestartet — Foto aufnehmen. Warte auf neues Foto...";
-
-                string? found = null;
-                var timeout = TimeSpan.FromSeconds(30);
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                while (sw.Elapsed < timeout)
-                {
-                    foreach (var d in candidateDirs)
-                    {
-                        if (!Directory.Exists(d)) continue;
-                        foreach (var f in Directory.GetFiles(d))
-                        {
-                            if (existing.Contains(f)) continue;
-                            try
-                            {
-                                var write = File.GetLastWriteTimeUtc(f);
-                                if (write >= startUtc.AddSeconds(-2))
-                                {
-                                    found = f;
-                                    break;
-                                }
-                            }
-                            catch { }
-                        }
-                        if (found != null) break;
-                    }
-                    if (found != null) break;
-                    System.Threading.Thread.Sleep(500);
-                }
-
-                if (found == null)
-                {
-                    lblStatus.Text = "Kein neues Foto automatisch gefunden — bitte Datei wählen.";
-                    var ofd2 = new WpfOpenFileDialog
-                    {
-                        InitialDirectory = picRoot,
-                        Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp|All files|*.*"
-                    };
-                    if (ofd2.ShowDialog() != true)
-                    {
-                        lblStatus.Text = string.Empty;
-                        return;
-                    }
-                    chosenPath = ofd2.FileName;
-                }
-                else
-                {
-                    chosenPath = found;
-                    lblStatus.Text = "Neues Foto automatisch gefunden.";
-                }
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show($"Kamera konnte nicht gestartet werden: {ex.Message}", "Fehler",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-        }
-        else
-        {
-            var ofd = new WpfOpenFileDialog
-            {
-                Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp|All files|*.*"
-            };
-            if (ofd.ShowDialog() != true) return;
-            chosenPath = ofd.FileName;
-        }
-
-        if (string.IsNullOrEmpty(chosenPath)) return;
-
-        var destFileName = Path.GetFileName(chosenPath);
-        var destPath = Path.Combine(rootDir, destFileName);
+    private void SavePhotoToTaskDirectory(string sourcePath, string directory, MaintenanceTask task)
+    {
         try
         {
-            File.Copy(chosenPath, destPath, true);
-            selectedTask.PhotoPath = destPath;
-            selectedTask.Done = true;
+            var fileName = Path.GetFileName(sourcePath);
+            var destPath = Path.Combine(directory, fileName);
+            File.Copy(sourcePath, destPath, overwrite: true);
+
+            task.PhotoPath = destPath;
+            task.Done = true;
 
             lblStatus.Text = "Foto gespeichert.";
         }
