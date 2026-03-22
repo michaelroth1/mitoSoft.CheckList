@@ -4,17 +4,31 @@ namespace mitoSoft.Checklist.Extensions;
 
 public static class FileInfoExtensions
 {
-    public static FileInfo GetDefaultFileName(this string name)
+    public static FileInfo GetValidFileName(this FileInfo file)
     {
-        name = name.Replace(" ", "_");
-        var datePart = DateTime.Now.ToString("yyyy-MM-dd");
-        var defaultName = $"{datePart}_{name}.xml";
+        var dir = file.DirectoryName ?? string.Empty;
+        var fileName = file.Name;
+        fileName = fileName.Replace(" ", "_");
+
         foreach (var c in Path.GetInvalidFileNameChars())
         {
-            defaultName = defaultName.Replace(c, '_');
+            fileName = fileName.Replace(c, '_');
         }
 
-        return new FileInfo(defaultName);
+        return new FileInfo(Path.Combine(dir, fileName));
+    }
+
+    public static string GetFileNameWithoutExtension(this FileInfo file)
+    {
+        return Path.GetFileNameWithoutExtension(file.Name);
+    }
+
+    public static FileInfo GetDefaultFileName(this string name)
+    {
+        var datePart = DateTime.Now.ToString("yyyy-MM-dd");
+        var defaultName = new FileInfo($"{datePart}_{name}.xml");
+
+        return defaultName.GetValidFileName();
     }
 
     public static void TryShowPhoto(this FileInfo file)

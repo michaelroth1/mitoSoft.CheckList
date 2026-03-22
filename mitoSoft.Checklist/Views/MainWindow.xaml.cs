@@ -10,6 +10,7 @@ using WpfMessageBox = System.Windows.MessageBox;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using mitoSoft.Checklist.Converters;
 
 namespace mitoSoft.Checklist;
 
@@ -405,7 +406,9 @@ public partial class MainWindow : Window
         var planName = "UnnamedPlan";
         if (!string.IsNullOrEmpty(_plan.Path))
         {
-            planName = Path.GetFileNameWithoutExtension(_plan.Path);
+            planName = _plan.Path
+                .ToFileInfo()
+                .GetFileNameWithoutExtension();
         }
         else if (!string.IsNullOrEmpty(currentStep.Title))
         {
@@ -481,6 +484,7 @@ public partial class MainWindow : Window
                 foreach (var d in candidateDirs)
                 {
                     if (!Directory.Exists(d)) continue;
+
                     foreach (var f in Directory.GetFiles(d))
                     {
                         if (existing.Contains(f)) continue;
@@ -495,8 +499,10 @@ public partial class MainWindow : Window
                         }
                         catch { }
                     }
+
                     if (found != null) break;
                 }
+
                 if (found != null) break;
                 System.Threading.Thread.Sleep(500);
                 WpfApplication.Current.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
@@ -537,7 +543,7 @@ public partial class MainWindow : Window
             selectedTask.PhotoPath = chosenPath;
             selectedTask.Done = true;
 
-             foreach (var panel in spTasks.Children.OfType<StackPanel>())
+            foreach (var panel in spTasks.Children.OfType<StackPanel>())
             {
                 WpfCheckBox? foundChk = null;
                 TextBlock? foundLink = null;
@@ -667,18 +673,15 @@ public partial class MainWindow : Window
 
     private void btnSaveAs_Click(object sender, RoutedEventArgs e)
     {
-        string defaultName = _plan!.GetDefaultFileName();
         var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var folder = Path.Combine(docs, "Wartungen");
-        if (!Directory.Exists(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
+
+        Directory.CreateDirectory(folder);
 
         var sfd = new WpfSaveFileDialog
         {
             InitialDirectory = folder,
-            FileName = defaultName,
+            FileName = _plan!.GetDefaultFileName().FullName,
             Filter = "XML files (*.xml)|*.xml|All files (*.*)|*.*"
         };
 
@@ -750,7 +753,9 @@ public partial class MainWindow : Window
     {
         var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var root = Path.Combine(docs, "Wartungen");
-        var name = Path.GetFileNameWithoutExtension(_plan!.GetDefaultFileName());
+        var name = _plan!
+            .GetDefaultFileName()
+            .GetFileNameWithoutExtension();
         var exportFolder = Path.Combine(root, name);
 
         Directory.CreateDirectory(exportFolder);
@@ -845,7 +850,9 @@ public partial class MainWindow : Window
         var planName = "UnnamedPlan";
         if (!string.IsNullOrEmpty(_plan.Path))
         {
-            planName = Path.GetFileNameWithoutExtension(_plan.Path);
+            planName = _plan.Path
+                .ToFileInfo()
+                .GetFileNameWithoutExtension();
         }
         else if (!string.IsNullOrEmpty(cur.Title))
         {
@@ -854,10 +861,8 @@ public partial class MainWindow : Window
 
         var datePart = DateTime.Now.ToString("yyyy-MM-dd");
         var rootDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Records", datePart + "_" + planName);
-        if (!Directory.Exists(rootDir))
-        {
-            Directory.CreateDirectory(rootDir);
-        }
+
+        Directory.CreateDirectory(rootDir);
 
         var res = WpfMessageBox.Show("Foto aufnehmen mit Kamera? (Nein = Aus Datei wählen)", "Fotoquelle",
             MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
