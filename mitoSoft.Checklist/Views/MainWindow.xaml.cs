@@ -1,9 +1,10 @@
+using mitoSoft.Checklist.Converters;
+using mitoSoft.Checklist.Extensions;
 using mitoSoft.Checklist.Helpers;
 using mitoSoft.Checklist.Models;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using mitoSoft.Checklist.Extensions;
 using WpfApplication = System.Windows.Application;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfCheckBox = System.Windows.Controls.CheckBox;
@@ -11,7 +12,6 @@ using WpfMessageBox = System.Windows.MessageBox;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
-using mitoSoft.Checklist.Converters;
 
 namespace mitoSoft.Checklist;
 
@@ -89,7 +89,8 @@ public partial class MainWindow : Window
                 "text" => CreateTextInputTask(task, i),
                 "zahl" => CreateNumberInputTask(task, i),
                 "photo" => CreatePhotoTask(i, task),
-                _ => CreateCheckboxTask(task, i)
+                "check" => CreateCheckboxTask(task, i),
+                _ => throw new InvalidOperationException($"Unknown task type: {task.Type}")
             };
             spTasks.Children.Add(taskElement);
         }
@@ -112,18 +113,7 @@ public partial class MainWindow : Window
         };
         panel.Children.Add(label);
 
-        var textBox = new System.Windows.Controls.TextBox
-        {
-            Text = task.UserInput ?? string.Empty,
-            Tag = index,
-            FontSize = _isTabletMode ? 16 : 14,
-            MinHeight = 30,
-            Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            MinLines = 2
-        };
-        textBox.TextChanged += TextInput_Changed;
+        var textBox = _uiModeManager!.CreateTextInputBox(index, task.UserInput, TextInput_Changed);
         panel.Children.Add(textBox);
 
         return panel;
@@ -146,22 +136,13 @@ public partial class MainWindow : Window
         };
         panel.Children.Add(label);
 
-        var numberBox = new System.Windows.Controls.TextBox
+        var numberBox = _uiModeManager!.CreateTextInputBox(index, task.UserInput, TextInput_Changed);
+        numberBox.InputScope = new System.Windows.Input.InputScope
         {
-            Text = task.UserInput ?? string.Empty,
-            Tag = index,
-            FontSize = _isTabletMode ? 16 : 14,
-            MinHeight = 30,
-            Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
-            AcceptsReturn = false,
-            TextWrapping = TextWrapping.NoWrap,
-            InputScope = new System.Windows.Input.InputScope
-            {
-                Names = { new System.Windows.Input.InputScopeName(System.Windows.Input.InputScopeNameValue.Number) }
-            }
+            Names = { new System.Windows.Input.InputScopeName(System.Windows.Input.InputScopeNameValue.Number) }
         };
         numberBox.PreviewTextInput += NumberBox_PreviewTextInput;
-        numberBox.TextChanged += TextInput_Changed;
+
         panel.Children.Add(numberBox);
 
         return panel;
@@ -223,7 +204,7 @@ public partial class MainWindow : Window
             task.Done = !string.IsNullOrWhiteSpace(tb.Text);
         }
     }
-        
+
     private void Link_Click(int taskIndex)
     {
         var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
@@ -554,7 +535,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _plan.SaveToTemplate();
+        _plan!.SaveToTemplate();
 
         lblStatus.Text = $"Plan erfolgreich gespeichert. ({DateTime.Now})";
     }
@@ -569,13 +550,13 @@ public partial class MainWindow : Window
         var sfd = new WpfSaveFileDialog
         {
             InitialDirectory = folder,
-            FileName = _plan!.GetDefaultFileName().FullName,
+            FileName = _plan!.GetDefaultFileName().Name,
             Filter = "XML files (*.xml)|*.xml|All files (*.*)|*.*"
         };
 
         if (sfd.ShowDialog() != true) return;
 
-        _plan.TrySaveToTemplateAs(sfd.FileName);
+        _plan!.TrySaveToTemplateAs(sfd.FileName);
 
         lblStatus.Text = $"Plan erfolgreich gespeichert. ({DateTime.Now})";
     }
@@ -587,8 +568,6 @@ public partial class MainWindow : Window
         lblPlanTitle.Text = "Kein Plan geladen...";
         lblStepDescription.Text = string.Empty;
         spTasks.Children.Clear();
-        btnNext.IsEnabled = false;
-        btnBack.IsEnabled = false;
         lblStatus.Text = string.Empty;
 
         UpdateButtonState();
@@ -639,24 +618,23 @@ public partial class MainWindow : Window
 
     private void btnExportPdf_Click(object sender, RoutedEventArgs e)
     {
-        var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var root = Path.Combine(docs, "Wartungen");
+        var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var name = _plan!
             .GetDefaultFileName()
             .GetFileNameWithoutExtension();
-        var exportFolder = Path.Combine(root, name);
+        var exportFolder = System.IO.Path.Combine(root, "Wartungen", name);
 
         Directory.CreateDirectory(exportFolder);
 
-        var fbd = new System.Windows.Forms.FolderBrowserDialog
+        var dialog = new System.Windows.Forms.FolderBrowserDialog
         {
             Description = "Wähle Zielordner für Export (Fotos und Bericht werden dort abgelegt)",
             SelectedPath = exportFolder
         };
 
-        if (fbd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-        exportFolder = fbd.SelectedPath;
+        exportFolder = dialog.SelectedPath;
 
         if (Directory.Exists(exportFolder) && Directory.EnumerateFileSystemEntries(exportFolder).Any())
         {

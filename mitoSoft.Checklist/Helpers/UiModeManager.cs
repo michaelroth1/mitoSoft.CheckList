@@ -213,6 +213,22 @@ public class UiModeManager
         return link;
     }
 
+    public System.Windows.Controls.TextBox CreateTextInputBox(int index, string? text, TextChangedEventHandler textChangedHandler)
+    {
+        var textBox = new System.Windows.Controls.TextBox
+        {
+            Text = text ?? string.Empty,
+            Tag = index,
+            FontSize = _isTabletMode ? 16 : 14,
+            MinHeight = 30,
+            Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
+            TextWrapping = TextWrapping.NoWrap
+        };
+
+        textBox.TextChanged += textChangedHandler;
+        return textBox;
+    }
+
     private class ButtonConfig
     {
         public string DesktopStyle { get; init; } = string.Empty;
