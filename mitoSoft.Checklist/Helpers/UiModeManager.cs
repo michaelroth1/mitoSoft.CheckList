@@ -1,5 +1,7 @@
 using System.Windows;
+using System.Windows.Controls;
 using WpfButton = System.Windows.Controls.Button;
+using WpfCheckBox = System.Windows.Controls.CheckBox;
 using WpfPanel = System.Windows.Controls.Panel;
 using WpfSize = System.Windows.Size;
 using WpfTextBlock = System.Windows.Controls.TextBlock;
@@ -12,6 +14,7 @@ public class UiModeManager
     private readonly Dictionary<string, ButtonConfig> _buttonConfigs;
     private readonly PanelConfig _panelConfig;
     private readonly LabelConfig _labelConfig;
+    private bool _isTabletMode;
 
     public UiModeManager(Window window)
     {
@@ -113,6 +116,7 @@ public class UiModeManager
 
     public void ApplyMode(bool isTabletMode)
     {
+        _isTabletMode = isTabletMode;
         ApplyButtonStyles(isTabletMode);
         ApplyPanelStyles(isTabletMode);
         ApplyLabelStyles(isTabletMode);
@@ -172,6 +176,41 @@ public class UiModeManager
         {
             toggleButton.Content = isTabletMode ? "📱" : "💻";
         }
+    }
+
+    public WpfCheckBox CreateTaskCheckbox(int index, string text, bool isChecked, RoutedEventHandler checkedHandler, RoutedEventHandler uncheckedHandler)
+    {
+        var checkbox = new WpfCheckBox
+        {
+            Content = text,
+            IsChecked = isChecked,
+            Tag = index,
+            FontSize = _isTabletMode ? 18 : 16,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
+            MinWidth = 30,
+            MinHeight = 30
+        };
+        checkbox.Checked += checkedHandler;
+        checkbox.Unchecked += uncheckedHandler;
+        return checkbox;
+    }
+
+    public WpfTextBlock CreatePhotoLink(int taskIndex, string photoPath, Action<int> clickHandler)
+    {
+        var link = new WpfTextBlock
+        {
+            Text = "(Foto)",
+            Foreground = System.Windows.Media.Brushes.Blue,
+            TextDecorations = TextDecorations.Underline,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Tag = taskIndex,
+            FontSize = _isTabletMode ? 20 : 14,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = photoPath
+        };
+        link.MouseLeftButtonUp += (s, e) => clickHandler(taskIndex);
+        return link;
     }
 
     private class ButtonConfig

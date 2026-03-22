@@ -88,6 +88,7 @@ public partial class MainWindow : Window
             {
                 "text" => CreateTextInputTask(task, i),
                 "zahl" => CreateNumberInputTask(task, i),
+                "photo" => CreatePhotoTask(i, task),
                 _ => CreateCheckboxTask(task, i)
             };
             spTasks.Children.Add(taskElement);
@@ -174,25 +175,26 @@ public partial class MainWindow : Window
             Margin = _isTabletMode ? new Thickness(0, 10, 0, 10) : new Thickness(0, 5, 0, 5)
         };
 
-        var checkbox = new WpfCheckBox
-        {
-            Content = task.Text,
-            IsChecked = task.Done,
-            Tag = index,
-            FontSize = _isTabletMode ? 18 : 16,
-            VerticalContentAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 10, 0),
-            MinWidth = 30,
-            MinHeight = 30
-        };
-        checkbox.Checked += TaskCheck_Changed;
-        checkbox.Unchecked += TaskCheck_Changed;
+        var checkbox = _uiModeManager!.CreateTaskCheckbox(index, task.Text, task.Done, TaskCheck_Changed, TaskCheck_Changed);
         panel.Children.Add(checkbox);
 
-        if (task.Type?.Equals("Photo", StringComparison.OrdinalIgnoreCase) == true
-            && !string.IsNullOrEmpty(task.PhotoPath))
+        return panel;
+    }
+
+    private StackPanel CreatePhotoTask(int index, MaintenanceTask task)
+    {
+        var panel = new StackPanel
         {
-            var link = CreatePhotoLink(index, task.PhotoPath);
+            Orientation = WpfOrientation.Horizontal,
+            Margin = _isTabletMode ? new Thickness(0, 10, 0, 10) : new Thickness(0, 5, 0, 5)
+        };
+
+        var checkbox = _uiModeManager!.CreateTaskCheckbox(index, task.Text, task.Done, TaskCheck_Changed, TaskCheck_Changed);
+        panel.Children.Add(checkbox);
+
+        if (!string.IsNullOrEmpty(task.PhotoPath))
+        {
+            var link = _uiModeManager!.CreatePhotoLink(index, task.PhotoPath, Link_Click);
             panel.Children.Add(link);
         }
 
@@ -221,25 +223,7 @@ public partial class MainWindow : Window
             task.Done = !string.IsNullOrWhiteSpace(tb.Text);
         }
     }
-
-    private TextBlock CreatePhotoLink(int taskIndex, string photoPath)
-    {
-        var link = new TextBlock
-        {
-            Text = "(Foto)",
-            Foreground = WpfBrushes.Blue,
-            TextDecorations = TextDecorations.Underline,
-            Cursor = System.Windows.Input.Cursors.Hand,
-            Tag = taskIndex,
-            FontSize = _isTabletMode ? 20 : 14,
-            VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = photoPath
-        };
-
-        link.MouseLeftButtonUp += (s, e) => Link_Click(taskIndex);
-        return link;
-    }
-
+        
     private void Link_Click(int taskIndex)
     {
         var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
@@ -474,7 +458,7 @@ public partial class MainWindow : Window
 
                     if (foundLink == null)
                     {
-                        var link = CreatePhotoLink(taskIndex, chosenPath);
+                        var link = _uiModeManager!.CreatePhotoLink(taskIndex, chosenPath, Link_Click);
                         panel.Children.Add(link);
                     }
                 }
