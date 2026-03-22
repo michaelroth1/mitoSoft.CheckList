@@ -1,10 +1,11 @@
 using System.IO;
+using mitoSoft.Checklist.Helpers;
 using PdfSharpCore.Drawing;
 using PdfSharpCore.Pdf;
 // annotations not used - write file:// links as text so PDF viewers can detect them
-using TobisChecklist.Models;
+using mitoSoft.Checklist.Models;
 
-namespace TobisChecklist;
+namespace mitoSoft.Checklist;
 
 internal class PdfExporter(string filePath)
 {

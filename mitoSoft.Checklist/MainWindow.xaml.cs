@@ -1,7 +1,8 @@
+using mitoSoft.Checklist.Helpers;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using TobisChecklist.Extensions;
+using mitoSoft.Checklist.Extensions;
 using WpfApplication = System.Windows.Application;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfCheckBox = System.Windows.Controls.CheckBox;
@@ -10,7 +11,7 @@ using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
-namespace TobisChecklist;
+namespace mitoSoft.Checklist;
 
 public partial class MainWindow : Window
 {

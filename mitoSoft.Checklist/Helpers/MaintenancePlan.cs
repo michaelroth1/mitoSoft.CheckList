@@ -1,8 +1,8 @@
 using System.IO;
 using System.Xml.Linq;
-using TobisChecklist.Models;
+using mitoSoft.Checklist.Models;
 
-namespace TobisChecklist;
+namespace mitoSoft.Checklist.Helpers;
 
 public class MaintenancePlan
 {

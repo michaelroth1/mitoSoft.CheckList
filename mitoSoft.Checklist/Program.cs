@@ -1,7 +1,7 @@
 using System;
 using System.Windows;
 
-namespace TobisChecklist;
+namespace mitoSoft.Checklist;
 
 internal static class Program
 {

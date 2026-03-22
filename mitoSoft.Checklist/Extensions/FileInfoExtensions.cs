@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace TobisChecklist.Extensions;
+namespace mitoSoft.Checklist.Extensions;
 
 public static class FileInfoExtensions
 {

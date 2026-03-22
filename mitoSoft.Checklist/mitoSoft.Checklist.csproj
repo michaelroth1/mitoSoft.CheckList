@@ -7,16 +7,13 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <StartupObject>TobisChecklist.Program</StartupObject>
+    <StartupObject>mitoSoft.Checklist.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="PdfSharpCore" Version="1.3.67" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="WVE.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Helpers\" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml" />

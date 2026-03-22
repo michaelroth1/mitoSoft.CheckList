@@ -1,4 +1,4 @@
-﻿namespace TobisChecklist.Models;
+﻿namespace mitoSoft.Checklist.Models;
 
 public class MaintenanceTask
 {
