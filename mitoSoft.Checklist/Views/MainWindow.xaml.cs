@@ -1,4 +1,5 @@
 using mitoSoft.Checklist.Helpers;
+using mitoSoft.Checklist.Models;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private MaintenancePlan? _plan;
     private int _currentIndex = -1;
     private bool _isTabletMode = false;
+    private UiModeManager? _uiModeManager;
 
     public MainWindow()
     {
@@ -27,12 +29,14 @@ public partial class MainWindow : Window
         // Only load runtime resources when not in design mode
         if (!System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
         {
+            _uiModeManager = new UiModeManager(this);
+            _uiModeManager.ApplyMode(false);
             ClearWizard();
-            UpdateUI();
+            UpdateButtonState();
         }
     }
 
-    private void UpdateUI()
+    private void UpdateButtonState()
     {
         bool hasPlan = _plan != null;
         bool hasValidStep = hasPlan && _currentIndex >= 0 && _currentIndex < _plan!.Steps.Count;
@@ -54,116 +58,10 @@ public partial class MainWindow : Window
         btnNext.IsEnabled = hasValidStep && _plan!.Steps[_currentIndex].Tasks.All(t => t.Done);
     }
 
-    private void ToggleMode_Changed(object sender, RoutedEventArgs e)
+    private void ToggleMode_Click(object sender, RoutedEventArgs e)
     {
-        _isTabletMode = toggleMode.IsChecked == true;
-
-        if (_isTabletMode)  // Switch to Tablet Mode
-        {
-            // Apply tablet styles to all buttons
-            btnLoad.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnLoadTemplate.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnSave.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnSaveAs.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnAttachPhoto.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnExportPdf.Style = (Style)FindResource("MainButtonStyleTablet");
-            btnBack.Style = (Style)FindResource("PrimaryButtonStyleTablet");
-            btnNext.Style = (Style)FindResource("PrimaryButtonStyleTablet");
-
-            // Increase toggle button size
-            toggleMode.Width = 80;
-            toggleMode.Height = 60;
-            toggleMode.FontSize = 24;
-            toggleMode.Margin = new Thickness(0, 0, 15, 0);
-            toggleMode.Content = "📱";
-
-            // Increase button sizes
-            btnLoad.Width = 80;
-            btnLoad.Height = 60;
-            btnLoadTemplate.Width = 80;
-            btnLoadTemplate.Height = 60;
-            btnSave.Width = 80;
-            btnSave.Height = 60;
-            btnSaveAs.Width = 80;
-            btnSaveAs.Height = 60;
-            btnAttachPhoto.Width = 80;
-            btnAttachPhoto.Height = 60;
-            btnExportPdf.Width = 80;
-            btnExportPdf.Height = 60;
-            btnBack.Width = 250;
-            btnBack.Height = 60;
-            btnNext.Width = 250;
-            btnNext.Height = 60;
-
-            // Increase spacing
-            btnLoad.Margin = new Thickness(0, 0, 15, 0);
-            btnLoadTemplate.Margin = new Thickness(0, 0, 15, 0);
-            btnSave.Margin = new Thickness(0, 0, 15, 0);
-            btnSaveAs.Margin = new Thickness(0, 0, 15, 0);
-            btnAttachPhoto.Margin = new Thickness(0, 0, 15, 0);
-            btnExportPdf.Margin = new Thickness(0, 0, 0, 0);
-
-            // Adjust panel height
-            buttonPanel.Height = 60;
-
-            // Increase font sizes
-            lblPlanTitle.FontSize = 32;
-            lblStepDescription.FontSize = 14;
-            lblStepIndex.FontSize = 16;
-        }
-        else  // Switch to Desktop Mode
-        {
-            // Apply desktop styles
-            btnLoad.Style = (Style)FindResource("MainButtonStyle");
-            btnLoadTemplate.Style = (Style)FindResource("MainButtonStyle");
-            btnSave.Style = (Style)FindResource("MainButtonStyle");
-            btnSaveAs.Style = (Style)FindResource("MainButtonStyle");
-            btnAttachPhoto.Style = (Style)FindResource("MainButtonStyle");
-            btnExportPdf.Style = (Style)FindResource("MainButtonStyle");
-            btnBack.Style = (Style)FindResource("PrimaryButtonStyle");
-            btnNext.Style = (Style)FindResource("PrimaryButtonStyle");
-
-            // Reset toggle button size
-            toggleMode.Width = 60;
-            toggleMode.Height = 40;
-            toggleMode.FontSize = 14;
-            toggleMode.Margin = new Thickness(0, 0, 10, 0);
-            toggleMode.Content = "💻";
-
-            // Reset button sizes
-            btnLoad.Width = 60;
-            btnLoad.Height = 40;
-            btnLoadTemplate.Width = 60;
-            btnLoadTemplate.Height = 40;
-            btnSave.Width = 60;
-            btnSave.Height = 40;
-            btnSaveAs.Width = 60;
-            btnSaveAs.Height = 40;
-            btnAttachPhoto.Width = 60;
-            btnAttachPhoto.Height = 40;
-            btnExportPdf.Width = 60;
-            btnExportPdf.Height = 40;
-            btnBack.Width = 200;
-            btnBack.Height = 40;
-            btnNext.Width = 200;
-            btnNext.Height = 40;
-
-            // Reset spacing
-            btnLoad.Margin = new Thickness(0, 0, 10, 0);
-            btnLoadTemplate.Margin = new Thickness(0, 0, 10, 0);
-            btnSave.Margin = new Thickness(0, 0, 10, 0);
-            btnSaveAs.Margin = new Thickness(0, 0, 10, 0);
-            btnAttachPhoto.Margin = new Thickness(0, 0, 10, 0);
-            btnExportPdf.Margin = new Thickness(0, 0, 0, 0);
-
-            // Reset panel height
-            buttonPanel.Height = 40;
-
-            // Reset font sizes
-            lblPlanTitle.FontSize = 32;
-            lblStepDescription.FontSize = 14;
-            lblStepIndex.FontSize = 16;
-        }
+        _isTabletMode = !_isTabletMode;
+        _uiModeManager?.ApplyMode(_isTabletMode);
 
         // Re-render tasks with appropriate sizing
         if (_plan != null && _currentIndex >= 0)
@@ -182,117 +80,123 @@ public partial class MainWindow : Window
             return;
         }
 
-        var cur = _plan.Steps[_currentIndex];
-        for (int i = 0; i < cur.Tasks.Count; i++)
+        var currentStep = _plan.Steps[_currentIndex];
+        for (int i = 0; i < currentStep.Tasks.Count; i++)
         {
-            var task = cur.Tasks[i];
-
-            if (task.Type?.Equals("Text", StringComparison.OrdinalIgnoreCase) == true)
+            var task = currentStep.Tasks[i];
+            var taskElement = task.Type?.ToLower() switch
             {
-                var textPanel = new StackPanel
-                {
-                    Orientation = WpfOrientation.Vertical,
-                    Margin = new Thickness(0, 5, 0, 15)
-                };
-
-                var label = new TextBlock
-                {
-                    Text = task.Text,
-                    FontSize = 16,
-                    FontWeight = FontWeights.SemiBold,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                textPanel.Children.Add(label);
-
-                var textBox = new System.Windows.Controls.TextBox
-                {
-                    Text = task.UserInput ?? string.Empty,
-                    Tag = i,
-                    FontSize = _isTabletMode ? 16 : 14,
-                    MinHeight = 30,
-                    Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
-                    AcceptsReturn = true,
-                    TextWrapping = TextWrapping.Wrap,
-                    MinLines = 2
-                };
-                textBox.TextChanged += TextInput_Changed;
-                textPanel.Children.Add(textBox);
-
-                spTasks.Children.Add(textPanel);
-            }
-            else if (task.Type?.Equals("Zahl", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                var numberPanel = new StackPanel
-                {
-                    Orientation = WpfOrientation.Vertical,
-                    Margin = new Thickness(0, 5, 0, 15)
-                };
-
-                var label = new TextBlock
-                {
-                    Text = task.Text,
-                    FontSize = 16,
-                    FontWeight = FontWeights.SemiBold,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                numberPanel.Children.Add(label);
-
-                var numberBox = new System.Windows.Controls.TextBox
-                {
-                    Text = task.UserInput ?? string.Empty,
-                    Tag = i,
-                    FontSize = _isTabletMode ? 16 : 14,
-                    MinHeight = 30,
-                    Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
-                    AcceptsReturn = false,
-                    TextWrapping = TextWrapping.NoWrap
-                };
-
-                // Enable numeric touch keyboard
-                var inputScope = new System.Windows.Input.InputScope();
-                inputScope.Names.Add(new System.Windows.Input.InputScopeName(System.Windows.Input.InputScopeNameValue.Number));
-                numberBox.InputScope = inputScope;
-
-                numberBox.PreviewTextInput += NumberBox_PreviewTextInput;
-                numberBox.TextChanged += TextInput_Changed;
-                numberPanel.Children.Add(numberBox);
-
-                spTasks.Children.Add(numberPanel);
-            }
-            else
-            {
-                var panel = new StackPanel
-                {
-                    Orientation = WpfOrientation.Horizontal,
-                    Margin = _isTabletMode ? new Thickness(0, 10, 0, 10) : new Thickness(0, 5, 0, 5)
-                };
-
-                var chk = new WpfCheckBox
-                {
-                    Content = task.Text,
-                    IsChecked = task.Done,
-                    Tag = i,
-                    FontSize = _isTabletMode ? 18 : 16,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    Margin = new Thickness(0, 0, 10, 0),
-                    MinWidth = 30,
-                    MinHeight = 30
-                };
-                chk.Checked += TaskCheck_Changed;
-                chk.Unchecked += TaskCheck_Changed;
-
-                panel.Children.Add(chk);
-
-                if (task.Type?.Equals("Photo", StringComparison.OrdinalIgnoreCase) == true
-                    && !string.IsNullOrEmpty(task.PhotoPath))
-                {
-                    var link = CreatePhotoLink(i, task.PhotoPath);
-                    panel.Children.Add(link);
-                }
-
-                spTasks.Children.Add(panel);
-            }
+                "text" => CreateTextInputTask(task, i),
+                "zahl" => CreateNumberInputTask(task, i),
+                _ => CreateCheckboxTask(task, i)
+            };
+            spTasks.Children.Add(taskElement);
         }
+    }
+
+    private StackPanel CreateTextInputTask(MaintenanceTask task, int index)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = WpfOrientation.Vertical,
+            Margin = new Thickness(0, 5, 0, 15)
+        };
+
+        var label = new TextBlock
+        {
+            Text = task.Text,
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+        panel.Children.Add(label);
+
+        var textBox = new System.Windows.Controls.TextBox
+        {
+            Text = task.UserInput ?? string.Empty,
+            Tag = index,
+            FontSize = _isTabletMode ? 16 : 14,
+            MinHeight = 30,
+            Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinLines = 2
+        };
+        textBox.TextChanged += TextInput_Changed;
+        panel.Children.Add(textBox);
+
+        return panel;
+    }
+
+    private StackPanel CreateNumberInputTask(MaintenanceTask task, int index)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = WpfOrientation.Vertical,
+            Margin = new Thickness(0, 5, 0, 15)
+        };
+
+        var label = new TextBlock
+        {
+            Text = task.Text,
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+        panel.Children.Add(label);
+
+        var numberBox = new System.Windows.Controls.TextBox
+        {
+            Text = task.UserInput ?? string.Empty,
+            Tag = index,
+            FontSize = _isTabletMode ? 16 : 14,
+            MinHeight = 30,
+            Padding = _isTabletMode ? new Thickness(10) : new Thickness(5),
+            AcceptsReturn = false,
+            TextWrapping = TextWrapping.NoWrap,
+            InputScope = new System.Windows.Input.InputScope
+            {
+                Names = { new System.Windows.Input.InputScopeName(System.Windows.Input.InputScopeNameValue.Number) }
+            }
+        };
+        numberBox.PreviewTextInput += NumberBox_PreviewTextInput;
+        numberBox.TextChanged += TextInput_Changed;
+        panel.Children.Add(numberBox);
+
+        return panel;
+    }
+
+    private StackPanel CreateCheckboxTask(MaintenanceTask task, int index)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = WpfOrientation.Horizontal,
+            Margin = _isTabletMode ? new Thickness(0, 10, 0, 10) : new Thickness(0, 5, 0, 5)
+        };
+
+        var checkbox = new WpfCheckBox
+        {
+            Content = task.Text,
+            IsChecked = task.Done,
+            Tag = index,
+            FontSize = _isTabletMode ? 18 : 16,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
+            MinWidth = 30,
+            MinHeight = 30
+        };
+        checkbox.Checked += TaskCheck_Changed;
+        checkbox.Unchecked += TaskCheck_Changed;
+        panel.Children.Add(checkbox);
+
+        if (task.Type?.Equals("Photo", StringComparison.OrdinalIgnoreCase) == true
+            && !string.IsNullOrEmpty(task.PhotoPath))
+        {
+            var link = CreatePhotoLink(index, task.PhotoPath);
+            panel.Children.Add(link);
+        }
+
+        return panel;
     }
 
     private void NumberBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
@@ -390,7 +294,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            UpdateUI();
+            UpdateButtonState();
         }
     }
 
@@ -577,7 +481,7 @@ public partial class MainWindow : Window
             }
 
             lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
-            UpdateUI();
+            UpdateButtonState();
         }
         catch (Exception ex)
         {
@@ -654,7 +558,7 @@ public partial class MainWindow : Window
 
         _currentIndex = 0;
         RenderCurrentStep();
-        UpdateUI();
+        UpdateButtonState();
         lblStatus.Text = "Erfolgreich geladen.";
     }
 
@@ -703,7 +607,7 @@ public partial class MainWindow : Window
         btnBack.IsEnabled = false;
         lblStatus.Text = string.Empty;
 
-        UpdateUI();
+        UpdateButtonState();
     }
 
     private void RenderCurrentStep()
@@ -723,7 +627,7 @@ public partial class MainWindow : Window
 
         lblStepIndex.Text = $"Step {_currentIndex + 1} of {_plan.Steps.Count}";
 
-        UpdateUI();
+        UpdateButtonState();
     }
 
     private void btnNext_Click(object sender, RoutedEventArgs e)

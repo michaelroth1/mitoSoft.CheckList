@@ -90,37 +90,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-        <!-- Toggle Button Style -->
-        <Style x:Key="ModeToggleStyle" TargetType="ToggleButton">
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border Background="{TemplateBinding Background}" 
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Background" Value="#4CAF50"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E0E0E0"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
     </Window.Resources>
 
     <Grid Margin="20">
@@ -155,57 +124,42 @@
                        HorizontalAlignment="Left"
                        VerticalAlignment="Top" 
                        Height="40">
-                <ToggleButton x:Name="toggleMode" 
-                         Style="{StaticResource ModeToggleStyle}"
-                         Width="60" 
-                         Height="40"
-                         Checked="ToggleMode_Changed"
-                         Unchecked="ToggleMode_Changed" 
-                         Margin="0,0,10,0"
-                         Content="💻">
-                </ToggleButton>
+                <Button x:Name="toggleMode" 
+                        Style="{StaticResource MainButtonStyle}"
+                        Click="ToggleMode_Click" 
+                        Content="💻"
+                        ToolTip="Umschalten zwischen Tablet und Desktop Modus"/>
                 <Button x:Name="btnLoadTemplate" 
                         Content="📋" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
-                        Margin="0,0,10,0"
                         Click="btnLoadTemplate_Click"
-                        ToolTip="Load from Template"/>
+                        ToolTip="Vorlage laden"/>
                 <Button x:Name="btnLoad" 
                         Content="📂" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
-                        Margin="0,0,10,0"
                         Click="btnLoad_Click"
                         ToolTip="Laden"/>
                 <Button x:Name="btnSave" 
                         Content="💾" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
-                        Margin="0,0,10,0"
                         IsEnabled="False"
                         Click="btnSave_Click"
                         ToolTip="Speichern"/>
                 <Button x:Name="btnSaveAs" 
                         Content="➕" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
-                        Margin="0,0,10,0"
                         IsEnabled="False"
                         Click="btnSaveAs_Click"
                         ToolTip="Speichern unter..."/>
                 <Button x:Name="btnAttachPhoto" 
                         Content="📷" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
-                        Margin="0,0,10,0"
                         IsEnabled="False"
                         Click="btnAttachPhoto_Click"
                         ToolTip="Foto"/>
                 <Button x:Name="btnExportPdf" 
                         Content="📄" 
                         Style="{StaticResource MainButtonStyle}"
-                        Width="60" Height="40"
                         IsEnabled="False"
                         Click="btnExportPdf_Click"
                         ToolTip="PDF Export"/>
@@ -280,7 +234,6 @@
                             Grid.Column="0"
                             Content="◀" 
                             Style="{StaticResource PrimaryButtonStyle}"
-                            Width="200" Height="40"
                             IsEnabled="False"                            
                             Click="btnBack_Click"
                             ToolTip="Zurück"/>
@@ -289,7 +242,6 @@
                             Grid.Column="2"
                             Content="▶" 
                             Style="{StaticResource PrimaryButtonStyle}"
-                            Width="200" Height="40"
                             IsEnabled="False"
                             Click="btnNext_Click"
                             ToolTip="Weiter"/>
