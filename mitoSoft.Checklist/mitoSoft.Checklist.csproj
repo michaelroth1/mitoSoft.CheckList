@@ -8,12 +8,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <StartupObject>mitoSoft.Checklist.Program</StartupObject>
+    <AssemblyName>Checklist</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="PdfSharpCore" Version="1.3.67" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="WVE.png" />
+    <Resource Include="Resources\WVE.png" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml" />

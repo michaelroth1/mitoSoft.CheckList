@@ -17,7 +17,6 @@ public partial class MainWindow : Window
 {
     private MaintenancePlan? _plan;
     private int _currentIndex = -1;
-    private bool _suppressItemCheck = false;
     private bool _isTabletMode = false;
 
     public MainWindow()
@@ -538,8 +537,7 @@ public partial class MainWindow : Window
             selectedTask.PhotoPath = chosenPath;
             selectedTask.Done = true;
 
-            _suppressItemCheck = true;
-            foreach (var panel in spTasks.Children.OfType<StackPanel>())
+             foreach (var panel in spTasks.Children.OfType<StackPanel>())
             {
                 WpfCheckBox? foundChk = null;
                 TextBlock? foundLink = null;
@@ -571,7 +569,6 @@ public partial class MainWindow : Window
                     }
                 }
             }
-            _suppressItemCheck = false;
 
             lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
             UpdateUI();

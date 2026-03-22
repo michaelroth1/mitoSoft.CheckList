@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="WVE Checklist" 
+        Title="Checklist" 
         Height="800" Width="1400"
         MinHeight="600" MinWidth="1000"
         Background="White"
@@ -145,7 +145,8 @@
                    Width="180"
                    Margin="10,0,20,0"
                    HorizontalAlignment="Left"
-                   Stretch="Uniform" Source="/WVE.png"/>
+                   Stretch="Uniform" 
+                   Source="/Resources/WVE.png"/>
 
             <!-- Buttons -->
             <StackPanel x:Name="buttonPanel" 
