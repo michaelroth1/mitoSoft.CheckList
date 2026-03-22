@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<MaintenancePlan>
+  <Metadata>
+    <Name>Wartungsplan FCK Heizung</Name>
+    <Version>1.0</Version>
+    <CreatedBy>Tobi Grüner</CreatedBy>
+    <CreatedAt>2026-03-20T12:00:00Z</CreatedAt>
+  </Metadata>
+  <Step id="1">
+    <Title>Visuelle Inspektion</Title>
+    <Description>Sichtprüfung der Heizungsanlage, Rohrleitungen und Isolierung.</Description>
+    <Task type="Text">Heizungsnummer eingeben</Task>
+	<Task type="Zahl" >Kesseltemperatur in °C notieren</Task>
+    <Task type="Check">Auf Leckagen prüfen</Task>
+    <Task type="Photo">Ein Foto der Gesamtanlage machen</Task>
+    <Task type="Check">Isolierung auf Beschädigungen prüfen</Task>
+    <Task type="Check">Abgas- und Schornsteinanschluss kontrollieren</Task>
+    <Task type="Photo">Foto des Schornsteinanschluss machen</Task>
+  </Step>
+  <Step id="2">
+    <Title>Brenner und Flamme</Title>
+    <Description>Kontrolle des Brenners, Flammenbildes und des Zündverhaltens.</Description>
+    <Task type="Check">Brenner reinigen</Task>
+    <Task type="Photo">Flammenbild beobachten</Task>
+    <Task type="Check">Zünd- und Sicherheitseinrichtungen prüfen</Task>
+  </Step>
+  <Step id="3">
+    <Title>Wärmetauscher und Kessel</Title>
+    <Description>Überprüfung auf Ablagerungen, Korrosion und Dichtheit.</Description>
+    <Task type="Photo" >Wärmetauscher auf Ablagerungen prüfen</Task>
+    <Task type="Check" >Kesseltemperatur kontrollieren</Task>
+    <Task type="Photo" >Kesseldichtheit prüfen</Task>
+  </Step>
+  <Step id="4">
+    <Title>Hydraulik, Druck und Entlüftung</Title>
+    <Description>Überprüfung von Systemdruck, Umwälzpumpe und Entlüftung der Heizkörper.</Description>
+    <Task type="Check" >Systemdruck kontrollieren</Task>
+    <Task type="Check" >Umwälzpumpe auf Geräusche und Funktion prüfen</Task>
+    <Task type="Check" >Heizkörper entlüften</Task>
+  </Step>
+  <Step id="5">
+    <Title>Filter und Brennstoff</Title>
+    <Description>Filterzustand und Brennstoffversorgung prüfen.</Description>
+    <Task type="Check" >Filter wechseln oder reinigen</Task>
+    <Task type="Check" >Brennstoffstand prüfen</Task>
+    <Task type="Photo" >Brennstoffleitungen auf Undichtigkeiten prüfen</Task>
+  </Step>
+  <Step id="6">
+    <Title>Sicherheits- und Regelungstest</Title>
+    <Description>Prüfen von Thermostaten, Sicherheitsventilen und Regelungsfunktionen.</Description>
+    <Task type="Check" >Sicherheitsventile testen</Task>
+    <Task type="Check" >Thermostate auf Funktion prüfen</Task>
+    <Task type="Check" >Not-Aus und Sensoren prüfen</Task>
+  </Step>
+  <Step id="7">
+    <Title>Abschlussarbeiten und Dokumentation</Title>
+    <Description>Probelauf, Reinigung und Dokumentation der durchgeführten Arbeiten.</Description>
+    <Task type="Check" >Anlage probelaufen lassen</Task>
+    <Task type="Photo" >Arbeiten dokumentieren</Task>
+    <Task type="Text" >Besondere Beobachtungen notieren</Task>
+    <Task type="Check" >Kundenhinweise und Empfehlungen geben</Task>
+  </Step>
+</MaintenancePlan>
