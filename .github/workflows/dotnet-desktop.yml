@@ -53,7 +53,7 @@ jobs:
           repo_token: "${{ secrets.RELEASE_TOKEN }}"
           prerelease: false
                   
-      - uses: csexton/release-asset-action@latest
+      - uses: csexton/release-asset-action@v3
         with:
            github-token: ${{ secrets.RELEASE_TOKEN }}
            pattern: ${{ github.workspace }}/${{ env.ZIP_FILENAME }}
