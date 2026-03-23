@@ -36,4 +36,24 @@ public static class MaintenancePlanExtensions
             }
         }
     }
+
+    public static bool IsValid(this MaintenancePlan plan)
+    {
+        return plan != null
+            && plan.Steps.Count > 0;
+    }
+
+    public static bool IsValidCurrentStep(this MaintenancePlan plan, int currentIndex)
+    {
+        return plan.IsValid()
+            && currentIndex >= 0
+            && currentIndex < plan.Steps.Count;
+    }
+
+    public static bool IsValidTaskIndex(this MaintenancePlan plan, int currentIndex, int taskIndex)
+    {
+        return plan.IsValidCurrentStep(currentIndex)
+            && taskIndex >= 0
+            && taskIndex < plan.Steps[currentIndex].Tasks.Count;
+    }
 }

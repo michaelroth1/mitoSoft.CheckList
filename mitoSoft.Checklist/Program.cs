@@ -1,6 +1,4 @@
 using mitoSoft.Checklist.Helpers;
-using System.Windows;
-using System.Windows.Interop;
 
 namespace mitoSoft.Checklist;
 

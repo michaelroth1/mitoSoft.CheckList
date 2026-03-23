@@ -8,23 +8,15 @@ using WpfTextBlock = System.Windows.Controls.TextBlock;
 
 namespace mitoSoft.Checklist.Helpers;
 
-public class UiModeManager
+public class UiModeManager(Window window)
 {
-    private readonly Window _window;
-    private readonly Dictionary<string, ButtonConfig> _buttonConfigs;
-    private readonly PanelConfig _panelConfig;
-    private readonly LabelConfig _labelConfig;
+    private readonly Window _window = window;
+    private readonly Dictionary<string, ButtonConfig> _buttonConfigs = InitializeButtonConfigs();
+    private readonly PanelConfig _panelConfig = new();
+    private readonly LabelConfig _labelConfig = new();
     private bool _isTabletMode;
 
-    public UiModeManager(Window window)
-    {
-        _window = window;
-        _buttonConfigs = InitializeButtonConfigs();
-        _panelConfig = new PanelConfig();
-        _labelConfig = new LabelConfig();
-    }
-
-    private Dictionary<string, ButtonConfig> InitializeButtonConfigs()
+    private static Dictionary<string, ButtonConfig> InitializeButtonConfigs()
     {
         return new Dictionary<string, ButtonConfig>
         {

@@ -4,12 +4,12 @@ using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace mitoSoft.Checklist.Helpers;
 
-public class CameraService
+public static class CameraService
 {
     private const int PhotoDetectionTimeoutSeconds = 30;
     private const string ImageFileFilter = "Image files|*.jpg;*.jpeg;*.png;*.bmp|All files|*.*";
 
-    public string? CapturePhotoFromCamera(Action<string> updateStatus)
+    public static string? CapturePhotoFromCamera(Action<string> updateStatus)
     {
         try
         {
@@ -39,7 +39,7 @@ public class CameraService
         }
     }
 
-    public string? SelectPhotoFromFile(string? initialDirectory = null, Action<string>? updateStatus = null)
+    public static string? SelectPhotoFromFile(string? initialDirectory = null, Action<string>? updateStatus = null)
     {
         var picRoot = initialDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         
@@ -58,17 +58,17 @@ public class CameraService
         return null;
     }
 
-    private List<string> GetCandidatePhotoDirectories(string picRoot)
+    private static List<string> GetCandidatePhotoDirectories(string picRoot)
     {
-        return new List<string>
-        {
+        return
+        [
             Path.Combine(picRoot, "Camera Roll"),
             Path.Combine(picRoot, "Saved Pictures"),
             picRoot
-        };
+        ];
     }
 
-    private HashSet<string> GetExistingFiles(List<string> directories)
+    private static HashSet<string> GetExistingFiles(List<string> directories)
     {
         var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var dir in directories)
@@ -84,7 +84,7 @@ public class CameraService
         return existing;
     }
 
-    private System.Diagnostics.Process? StartCameraApp()
+    private static System.Diagnostics.Process? StartCameraApp()
     {
         try
         {
@@ -97,7 +97,7 @@ public class CameraService
         }
     }
 
-    private string? WaitForNewPhoto(List<string> directories, HashSet<string> existingFiles, DateTime startTime, System.Diagnostics.Process? cameraProcess, Action<string> updateStatus)
+    private static string? WaitForNewPhoto(List<string> directories, HashSet<string> existingFiles, DateTime startTime, System.Diagnostics.Process? cameraProcess, Action<string> updateStatus)
     {
         var timeout = TimeSpan.FromSeconds(PhotoDetectionTimeoutSeconds);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -123,7 +123,7 @@ public class CameraService
         return null;
     }
 
-    private bool IsCameraStillRunning(System.Diagnostics.Process? cameraProcess)
+    private static bool IsCameraStillRunning(System.Diagnostics.Process? cameraProcess)
     {
         if (cameraProcess != null)
         {
@@ -150,7 +150,7 @@ public class CameraService
         }
     }
 
-    private string? FindNewPhoto(List<string> directories, HashSet<string> existingFiles, DateTime startTime)
+    private static string? FindNewPhoto(List<string> directories, HashSet<string> existingFiles, DateTime startTime)
     {
         foreach (var directory in directories)
         {

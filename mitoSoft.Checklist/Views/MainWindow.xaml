@@ -132,30 +132,30 @@
                 <Button x:Name="btnLoadTemplate" 
                         Content="📋" 
                         Style="{StaticResource MainButtonStyle}"
-                        Click="btnLoadTemplate_Click"
+                        Click="LoadTemplate_Clicked"
                         ToolTip="Vorlage laden"/>
                 <Button x:Name="btnLoad" 
                         Content="📂" 
                         Style="{StaticResource MainButtonStyle}"
-                        Click="btnLoad_Click"
+                        Click="Load_Clicked"
                         ToolTip="Laden"/>
                 <Button x:Name="btnSave" 
                         Content="💾" 
                         Style="{StaticResource MainButtonStyle}"
                         IsEnabled="False"
-                        Click="btnSave_Click"
+                        Click="Save_Clicked"
                         ToolTip="Speichern"/>
                 <Button x:Name="btnSaveAs" 
                         Content="➕" 
                         Style="{StaticResource MainButtonStyle}"
                         IsEnabled="False"
-                        Click="btnSaveAs_Click"
+                        Click="SaveAs_Clicked"
                         ToolTip="Speichern unter..."/>
                 <Button x:Name="btnExportPdf" 
                         Content="📄" 
                         Style="{StaticResource MainButtonStyle}"
                         IsEnabled="False"
-                        Click="btnExportPdf_Click"
+                        Click="ExportPdf_Clicked"
                         ToolTip="PDF Export"/>
             </StackPanel>
         </Grid>
@@ -229,7 +229,7 @@
                             Content="◀" 
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="False"                            
-                            Click="btnBack_Click"
+                            Click="Back_Clicked"
                             ToolTip="Zurück"/>
 
                     <Button x:Name="btnNext" 
@@ -237,7 +237,7 @@
                             Content="▶" 
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="False"
-                            Click="btnNext_Click"
+                            Click="Next_Clicked"
                             ToolTip="Weiter"/>
                 </Grid>
             </Grid>

@@ -21,7 +21,6 @@ public partial class MainWindow : Window
     private int _currentIndex = -1;
     private bool _isTabletMode = false;
     private readonly UiModeManager? _uiModeManager;
-    private readonly CameraService? _cameraService;
 
     public MainWindow()
     {
@@ -31,7 +30,6 @@ public partial class MainWindow : Window
         if (!System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
         {
             _uiModeManager = new UiModeManager(this);
-            _cameraService = new CameraService();
             _uiModeManager.ApplyMode(false);
             ClearWizard();
             UpdateButtonState();
@@ -41,7 +39,7 @@ public partial class MainWindow : Window
     private void UpdateButtonState()
     {
         bool hasPlan = _plan != null;
-        bool hasValidStep = hasPlan && _currentIndex >= 0 && _currentIndex < _plan!.Steps.Count;
+        bool hasValidStep = _plan?.IsValidCurrentStep(_currentIndex) ?? false;
 
         // Buttons requiring a loaded plan
         btnSave.IsEnabled = hasPlan;
@@ -65,7 +63,7 @@ public partial class MainWindow : Window
         _uiModeManager?.ApplyMode(_isTabletMode);
 
         // Re-render tasks with appropriate sizing
-        if (_plan != null && _currentIndex >= 0)
+        if (_plan?.IsValidCurrentStep(_currentIndex) == true)
         {
             RenderTasksForCurrentStep();
         }
@@ -74,9 +72,7 @@ public partial class MainWindow : Window
     private void RenderTasksForCurrentStep()
     {
         spTasks.Children.Clear();
-        if (_plan == null
-            || _currentIndex < 0
-            || _currentIndex >= _plan.Steps.Count)
+        if (_plan == null || !_plan.IsValidCurrentStep(_currentIndex))
         {
             return;
         }
@@ -193,9 +189,9 @@ public partial class MainWindow : Window
     {
         if (sender is System.Windows.Controls.TextBox tb && tb.Tag is int idx)
         {
-            if (!ValidateTaskIndex(idx)) return;
+            if (_plan == null || !_plan.IsValidTaskIndex(_currentIndex, idx)) return;
 
-            var task = _plan!.Steps[_currentIndex].Tasks[idx];
+            var task = _plan.Steps[_currentIndex].Tasks[idx];
             task.UserInput = tb.Text;
             task.Done = !string.IsNullOrWhiteSpace(tb.Text);
         }
@@ -205,9 +201,9 @@ public partial class MainWindow : Window
     {
         if (sender is TextBlock link && link.Tag is int taskIndex)
         {
-            if (!ValidateTaskIndex(taskIndex)) return;
+            if (_plan == null || !_plan.IsValidTaskIndex(_currentIndex, taskIndex)) return;
 
-            var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
+            var task = _plan.Steps[_currentIndex].Tasks[taskIndex];
             var file = new FileInfo(task.PhotoPath!);
             file.TryShowPhoto();
         }
@@ -217,9 +213,9 @@ public partial class MainWindow : Window
     {
         if (sender is WpfCheckBox chk && chk.Tag is int idx)
         {
-            if (!ValidateTaskIndex(idx)) return;
+            if (_plan == null || !_plan.IsValidTaskIndex(_currentIndex, idx)) return;
 
-            var task = _plan!.Steps[_currentIndex].Tasks[idx];
+            var task = _plan.Steps[_currentIndex].Tasks[idx];
 
             // If Photo task and user checked it, start photo flow
             if (chk.IsChecked == true
@@ -230,7 +226,7 @@ public partial class MainWindow : Window
                 chk.IsChecked = false;
                 chk.Checked += TaskCheck_Changed;
                 chk.Unchecked += TaskCheck_Changed;
-                AttachPhotoToTask(idx, requireCamera: true);
+                AttachPhotoToTask(idx);
                 return;
             }
 
@@ -263,29 +259,20 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AttachPhotoToTask(int taskIndex, bool requireCamera)
+    private void AttachPhotoToTask(int taskIndex)
     {
-        if (!ValidateTaskIndex(taskIndex)) return;
+        if (_plan == null || !_plan.IsValidTaskIndex(_currentIndex, taskIndex)) return;
 
-        var selectedTask = _plan!.Steps[_currentIndex].Tasks[taskIndex];
-        var photoPath = _cameraService!.CapturePhotoFromCamera(status => lblStatus.Text = status);
+        var selectedTask = _plan.Steps[_currentIndex].Tasks[taskIndex];
+        var photoPath = CameraService.CapturePhotoFromCamera(status => lblStatus.Text = status);
 
         if (!string.IsNullOrEmpty(photoPath))
         {
-            UpdateTaskWithPhoto(taskIndex, selectedTask, photoPath);
+            TryLinkPhotoWithTask(taskIndex, selectedTask, photoPath);
         }
     }
 
-    private bool ValidateTaskIndex(int taskIndex)
-    {
-        return _plan != null
-            && _currentIndex >= 0
-            && _currentIndex < _plan.Steps.Count
-            && taskIndex >= 0
-            && taskIndex < _plan.Steps[_currentIndex].Tasks.Count;
-    }
-
-    private void UpdateTaskWithPhoto(int taskIndex, MaintenanceTask task, string photoPath)
+    private void TryLinkPhotoWithTask(int taskIndex, MaintenanceTask task, string photoPath)
     {
         try
         {
@@ -294,13 +281,13 @@ public partial class MainWindow : Window
 
             UpdatePhotoTaskUI(taskIndex, photoPath);
 
-            lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
-
             UpdateButtonState();
+
+            lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
         }
         catch (Exception ex)
         {
-            throw new Exception($"Fehler beim Vermerken des Fotos: {ex.Message}");
+            throw new Exception($"Fehler beim Verlinken des Fotos: {ex.Message}");
         }
     }
 
@@ -340,7 +327,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void btnLoad_Click(object sender, RoutedEventArgs e)
+    private void Load_Clicked(object sender, RoutedEventArgs e)
     {
         var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var wartungenDirectory = new DirectoryInfo(Path.Combine(root, "Wartungen"));
@@ -353,7 +340,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void btnLoadTemplate_Click(object sender, RoutedEventArgs e)
+    private void LoadTemplate_Clicked(object sender, RoutedEventArgs e)
     {
         var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var vorlagenDirectory = new DirectoryInfo(Path.Combine(root, "Wartungsvorlagen"));
@@ -375,7 +362,7 @@ public partial class MainWindow : Window
 
             lblPlanTitle.Text = _plan.Name;
 
-            if (_plan.Steps.Count == 0)
+            if (!_plan.IsValid())
             {
                 throw new InvalidOperationException("Invalid Maintenance plan - no steps");
             }
@@ -383,8 +370,7 @@ public partial class MainWindow : Window
             _currentIndex = 0;
 
             RenderCurrentStep();
-            UpdateButtonState();
-
+            
             lblStatus.Text = "Erfolgreich geladen.";
         }
         catch (Exception ex)
@@ -392,13 +378,17 @@ public partial class MainWindow : Window
             ClearWizard();
             throw new InvalidOperationException($"Failed to load XML: {ex.Message}");
         }
+        finally
+        {
+            UpdateButtonState();
+        }
     }
 
-    private void btnSave_Click(object sender, RoutedEventArgs e)
+    private void Save_Clicked(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_plan!.Path))
         {
-            btnSaveAs_Click(sender, e);
+            SaveAs_Clicked(sender, e);
             return;
         }
 
@@ -407,7 +397,7 @@ public partial class MainWindow : Window
         lblStatus.Text = $"Plan erfolgreich gespeichert. ({DateTime.Now})";
     }
 
-    private void btnSaveAs_Click(object sender, RoutedEventArgs e)
+    private void SaveAs_Clicked(object sender, RoutedEventArgs e)
     {
         var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var wartungenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungen"));
@@ -436,9 +426,7 @@ public partial class MainWindow : Window
 
     private void RenderCurrentStep()
     {
-        if (_plan == null
-            || _currentIndex < 0
-            || _currentIndex >= _plan.Steps.Count)
+        if (_plan == null || !_plan.IsValidCurrentStep(_currentIndex))
         {
             return;
         }
@@ -454,7 +442,7 @@ public partial class MainWindow : Window
         UpdateButtonState();
     }
 
-    private void btnNext_Click(object sender, RoutedEventArgs e)
+    private void Next_Clicked(object sender, RoutedEventArgs e)
     {
         if (_currentIndex < _plan!.Steps.Count - 1)
         {
@@ -467,7 +455,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void btnBack_Click(object sender, RoutedEventArgs e)
+    private void Back_Clicked(object sender, RoutedEventArgs e)
     {
         if (_currentIndex > 0)
         {
@@ -476,7 +464,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void btnExportPdf_Click(object sender, RoutedEventArgs e)
+    private void ExportPdf_Clicked(object sender, RoutedEventArgs e)
     {
         var defaultFolderName = _plan!
             .GetDefaultFileName()

@@ -15,7 +15,7 @@ public class MaintenancePlan
     public string Name { get; private set; } = "Unnamed Plan";
 
     public MaintenancePlan(string path)
-    { 
+    {
         this.Path = path;
         this.SourcePath = path;
         this.LoadFromXml();
@@ -105,7 +105,7 @@ public class MaintenancePlan
             Name = string.IsNullOrWhiteSpace(nameEl?.Value) ? "Unnamed Plan" : nameEl.Value.Trim();
         }
 
-        foreach (var stepEl in root.Elements("Step"))
+        foreach (var stepEl in root!.Elements("Step"))
         {
             var s = new MaintenanceStep
             {
@@ -114,7 +114,7 @@ public class MaintenancePlan
                 Tasks = stepEl.Elements("Task").Select(t => new MaintenanceTask
                 {
                     Text = (string?)t ?? string.Empty,
-                    Done = ((string?)t.Attribute("done") == "true"),
+                    Done = ((string?)t!.Attribute("done") == "true"),
                     Type = ((string?)t.Attribute("type")) ?? "Check",
                     PhotoPath = ((string?)t.Attribute("photo")),
                     Mode = ((string?)t.Attribute("mode")) ?? "Optional",
