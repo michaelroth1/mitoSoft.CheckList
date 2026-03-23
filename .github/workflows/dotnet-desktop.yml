@@ -10,7 +10,7 @@ on:
   push:
     #branches: [ main ]
     tags:
-     - "v*" #add git bash an use following commands: git tag v1.0.0, git push origin v1.0.0
+      - "v*" #add git bash an use following commands: git tag v1.0.0, git push origin v1.0.0
 
 env:
   PROJECT_FILE: mitoSoft.Checklist.csproj
@@ -21,7 +21,7 @@ jobs:
   deploys:
     runs-on: windows-latest
     steps:     
-      - uses: actions/checkout@v2 
+      - uses: actions/checkout@v6
       
       - id: getversion
         uses: actions/github-script@v5
@@ -53,7 +53,7 @@ jobs:
           repo_token: "${{ secrets.RELEASE_TOKEN }}"
           prerelease: false
                   
-      - uses: csexton/release-asset-action@v2
+      - uses: csexton/release-asset-action@v3
         with:
            github-token: ${{ secrets.RELEASE_TOKEN }}
            pattern: ${{ github.workspace }}/${{ env.ZIP_FILENAME }}
