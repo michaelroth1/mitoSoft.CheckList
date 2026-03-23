@@ -1,6 +1,12 @@
-# mitoSoft.CheckList
+# InspectPro@WVE
 
-Eine WPF-Anwendung zur Verwaltung und Durchführung von Wartungsplänen mit integrierter Foto-Dokumentation und PDF-Export.
+<p align="center">
+  <img src="mitoSoft.Checklist/Resources/WVE.png" alt="InspectPro@WVE Logo" width="200"/>
+</p>
+
+**Professionelle Wartungsdokumentation mit System**
+
+Eine moderne WPF-Anwendung zur strukturierten Durchführung und Dokumentation von Wartungsplänen mit integrierter Foto-Dokumentation und PDF-Export. Optimiert für Desktop und Tablet.
 
 ## 🚀 Features
 
@@ -103,17 +109,60 @@ Dokumente/
 
 Diese Ordner werden automatisch verwendet, wenn sie existieren.
 
+## 📝 XML-Vorlagen erstellen
+
+Wartungsvorlagen sind XML-Dateien mit folgender Struktur:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<MaintenancePlan>
+  <Name>Beispiel Wartung</Name>
+  <Steps>
+    <Step>
+      <Title>Schritt 1: Sichtprüfung</Title>
+      <Description>Führe eine visuelle Inspektion durch</Description>
+      <Tasks>
+        <Task Type="Check" Text="Zustand prüfen" />
+        <Task Type="Text" Text="Bemerkungen" />
+        <Task Type="Photo" Text="Foto der Anlage" />
+      </Tasks>
+    </Step>
+  </Steps>
+</MaintenancePlan>
+```
+
+**Verfügbare Task-Typen:**
+- `Check` - Checkbox-Aufgabe
+- `Text` - Texteingabe
+- `Zahl` - Zahleneingabe
+- `Photo` - Foto-Aufgabe
+
 ## 🛠️ Technische Details
 
 - **Framework**: .NET 10
 - **UI-Framework**: WPF (Windows Presentation Foundation)
 - **Dateiformat**: XML für Wartungspläne
 - **Export-Format**: PDF
+- **Sprache**: C# 14.0
 
 ## 📋 Voraussetzungen
 
 - Windows 10/11
-- .NET 10 Runtime
+- .NET 10 Runtime oder SDK
+
+## ⚙️ Installation
+
+1. Lade die neueste Release-Version herunter
+2. Entpacke das ZIP-Archiv
+3. Starte `mitoSoft.Checklist.exe`
+
+**Oder kompiliere selbst:**
+```bash
+git clone https://github.com/michaelroth1/mitoSoft.CheckList.git
+cd mitoSoft.CheckList
+dotnet build
+dotnet run --project mitoSoft.Checklist
+```
 
 ## 💡 Tipps
 
@@ -123,14 +172,27 @@ Diese Ordner werden automatisch verwendet, wenn sie existieren.
 - Exportiere den Bericht am Ende für deine Dokumentation
 - Speichere regelmäßig während der Wartung
 
+## 🤝 Beitragen
+
+Beiträge sind willkommen! Bitte erstelle einen Pull Request oder öffne ein Issue für Verbesserungsvorschläge.
+
 ## 📝 Lizenz
 
 [Lizenzinformationen einfügen]
 
 ## 👤 Autor
 
-Michael Roth
+**Michael Roth**  
+📧 Kontakt über GitHub
 
 ## 🔗 Links
 
 - [GitHub Repository](https://github.com/michaelroth1/mitoSoft.CheckList)
+- [Issues & Feedback](https://github.com/michaelroth1/mitoSoft.CheckList/issues)
+- [Releases](https://github.com/michaelroth1/mitoSoft.CheckList/releases)
+
+---
+
+<p align="center">
+  Made with ❤️ for professional maintenance documentation
+</p>
