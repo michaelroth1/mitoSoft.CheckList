@@ -1,5 +1,35 @@
+# This is a basic workflow creates a Release by Git tags 
 
-# This is a basic workflow to help you get started with Actions
+# How to produce git tags: 
+#
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git tag v1.2
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git push origin v1.2
+# Total 0 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+# To https://github.com/michaelroth1/mitoSoft.CheckList
+#  * [new tag]         v1.2 -> v1.2
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git tag v1.3.0
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git push origin v1.3.0
+# Total 0 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+# To https://github.com/michaelroth1/mitoSoft.CheckList
+#  * [new tag]         v1.3.0 -> v1.3.0
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git tag v1.4.0
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git push origin v1.4.0
+# Total 0 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+# To https://github.com/michaelroth1/mitoSoft.CheckList
+#  * [new tag]         v1.4.0 -> v1.4.0
+# 
+# C:\WS_GIT\michaelroth1\mitoSoft.CheckList>git tag
+# v1.0
+# v1.1
+# v1.2
+# v1.3.0
+# v1.4.0
+#************************************************************************
 
 name: Build Release Zip
 
