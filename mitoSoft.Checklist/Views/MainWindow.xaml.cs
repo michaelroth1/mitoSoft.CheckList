@@ -295,6 +295,7 @@ public partial class MainWindow : Window
             UpdatePhotoTaskUI(taskIndex, photoPath);
 
             lblStatus.Text = "Foto vermerkt (Originalpfad wird beibehalten).";
+
             UpdateButtonState();
         }
         catch (Exception ex)
@@ -341,32 +342,32 @@ public partial class MainWindow : Window
 
     private void btnLoad_Click(object sender, RoutedEventArgs e)
     {
-        var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var wartungenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungen"));
+        var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        var wartungenDirectory = new DirectoryInfo(Path.Combine(root, "Wartungen"));
 
         var file = FileDialogService.OpenXmlFile(wartungenDirectory);
 
         if (file != null)
         {
-            LoadPlan(file);
+            TryLoadPlan(file);
         }
     }
 
     private void btnLoadTemplate_Click(object sender, RoutedEventArgs e)
     {
-        var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var vorlagenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungsvorlagen"));
+        var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        var vorlagenDirectory = new DirectoryInfo(Path.Combine(root, "Wartungsvorlagen"));
 
         var file = FileDialogService.OpenXmlFile(vorlagenDirectory);
 
         if (file != null)
         {
-            LoadPlan(file);
+            TryLoadPlan(file);
             _plan!.Path = string.Empty;
         }
     }
 
-    private void LoadPlan(FileInfo file)
+    private void TryLoadPlan(FileInfo file)
     {
         try
         {
@@ -378,17 +379,19 @@ public partial class MainWindow : Window
             {
                 throw new InvalidOperationException("Invalid Maintenance plan - no steps");
             }
+
+            _currentIndex = 0;
+
+            RenderCurrentStep();
+            UpdateButtonState();
+
+            lblStatus.Text = "Erfolgreich geladen.";
         }
         catch (Exception ex)
         {
             ClearWizard();
             throw new InvalidOperationException($"Failed to load XML: {ex.Message}");
         }
-
-        _currentIndex = 0;
-        RenderCurrentStep();
-        UpdateButtonState();
-        lblStatus.Text = "Erfolgreich geladen.";
     }
 
     private void btnSave_Click(object sender, RoutedEventArgs e)
