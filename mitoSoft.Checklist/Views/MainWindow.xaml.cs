@@ -20,9 +20,8 @@ public partial class MainWindow : Window
     private MaintenancePlan? _plan;
     private int _currentIndex = -1;
     private bool _isTabletMode = false;
-    private UiModeManager? _uiModeManager;
-    private CameraService? _cameraService;
-    private ExportDirectoryService? _exportDirectoryService;
+    private readonly UiModeManager? _uiModeManager;
+    private readonly CameraService? _cameraService;
 
     public MainWindow()
     {
@@ -33,7 +32,6 @@ public partial class MainWindow : Window
         {
             _uiModeManager = new UiModeManager(this);
             _cameraService = new CameraService();
-            _exportDirectoryService = new ExportDirectoryService();
             _uiModeManager.ApplyMode(false);
             ClearWizard();
             UpdateButtonState();
@@ -301,8 +299,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            WpfMessageBox.Show($"Fehler beim Vermerken des Fotos: {ex.Message}", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            throw new Exception($"Fehler beim Vermerken des Fotos: {ex.Message}");
         }
     }
 
@@ -344,10 +341,10 @@ public partial class MainWindow : Window
 
     private void btnLoad_Click(object sender, RoutedEventArgs e)
     {
-        var dir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var root = new DirectoryInfo(Path.Combine(dir, "Wartungen"));
+        var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        var wartungenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungen"));
 
-        var file = ChooseFile(root);
+        var file = FileDialogService.OpenXmlFile(wartungenDirectory);
 
         if (file != null)
         {
@@ -357,35 +354,15 @@ public partial class MainWindow : Window
 
     private void btnLoadTemplate_Click(object sender, RoutedEventArgs e)
     {
-        var dir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var root = new DirectoryInfo(Path.Combine(dir, "Wartungsvorlagen"));
+        var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        var vorlagenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungsvorlagen"));
 
-        var file = ChooseFile(root);
+        var file = FileDialogService.OpenXmlFile(vorlagenDirectory);
 
         if (file != null)
         {
             LoadPlan(file);
             _plan!.Path = string.Empty;
-        }
-    }
-
-    private FileInfo? ChooseFile(DirectoryInfo initialDirectory)
-    {
-        Directory.CreateDirectory(initialDirectory.FullName);
-
-        var ofd = new WpfOpenFileDialog
-        {
-            Filter = "XML files (*.xml)|*.xml|All files (*.*)|*.*",
-            InitialDirectory = initialDirectory.FullName,
-        };
-
-        if (ofd.ShowDialog() == true)
-        {
-            return new FileInfo(ofd.FileName);
-        }
-        else
-        {
-            return null;
         }
     }
 
@@ -429,21 +406,15 @@ public partial class MainWindow : Window
 
     private void btnSaveAs_Click(object sender, RoutedEventArgs e)
     {
-        var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var folder = Path.Combine(docs, "Wartungen");
+        var documentsRoot = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        var wartungenDirectory = new DirectoryInfo(Path.Combine(documentsRoot, "Wartungen"));
+        var defaultFileName = _plan!.GetDefaultFileName().Name;
 
-        Directory.CreateDirectory(folder);
+        var filePath = FileDialogService.SaveXmlFile(wartungenDirectory, defaultFileName);
 
-        var sfd = new WpfSaveFileDialog
-        {
-            InitialDirectory = folder,
-            FileName = _plan!.GetDefaultFileName().Name,
-            Filter = "XML files (*.xml)|*.xml|All files (*.*)|*.*"
-        };
+        if (filePath == null) return;
 
-        if (sfd.ShowDialog() != true) return;
-
-        _plan!.TrySaveToTemplateAs(sfd.FileName);
+        _plan!.TrySaveToTemplateAs(filePath);
 
         lblStatus.Text = $"Plan erfolgreich gespeichert. ({DateTime.Now})";
     }
@@ -489,8 +460,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            WpfMessageBox.Show("End of maintenance plan.", "Finished",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBoxService.ShowInfo("End of maintenance plan.");
         }
     }
 
@@ -509,8 +479,7 @@ public partial class MainWindow : Window
             .GetDefaultFileName()
             .GetFileNameWithoutExtension();
 
-        var exportFolder = ExportDirectoryService
-            .SelectAndPrepareExportDirectory(defaultFolderName);
+        var exportFolder = DirectoryService.SelectAndPrepareExportDirectory(defaultFolderName);
 
         if (exportFolder == null) return;
 
@@ -529,12 +498,11 @@ public partial class MainWindow : Window
             var exporter = new PdfExporter(pdfPath);
             exporter.Export(_plan!, "Wartungsbericht");
 
-            WpfMessageBox.Show("Export abgeschlossen.", "Export",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBoxService.ShowInfo("Export abgeschlossen.", "Export");
         }
         catch (Exception ex)
         {
-            throw new Exception($"Fehler beim Export: {ex.Message}.");
+            throw new Exception($"Fehler beim Export: {ex.Message}");
         }
     }
 }

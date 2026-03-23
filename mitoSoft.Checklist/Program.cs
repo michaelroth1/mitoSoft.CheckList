@@ -1,4 +1,6 @@
+using mitoSoft.Checklist.Helpers;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace mitoSoft.Checklist;
 
@@ -44,9 +46,14 @@ internal static class Program
     {
         try
         {
-            var msg = ex?.Message ?? "Unknown error";
-            System.Windows.MessageBox.Show($"Ein unerwarteter Fehler ist aufgetreten:\n{msg}", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            if (!string.IsNullOrEmpty(ex?.Message))
+            {
+                MessageBoxService.ShowError($"Ein unerwarteter Fehler ist aufgetreten:\n{ex?.Message}");
+            }
+            else
+            {
+                MessageBoxService.ShowError($"Ein unerwarteter Fehler ist aufgetreten.");
+            }
         }
         catch { }
     }

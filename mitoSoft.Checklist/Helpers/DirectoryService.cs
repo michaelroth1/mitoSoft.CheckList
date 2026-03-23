@@ -1,10 +1,9 @@
 using System.IO;
-using WpfMessageBox = System.Windows.MessageBox;
 
 namespace mitoSoft.Checklist.Helpers;
 
-public class ExportDirectoryService
-{
+public static class DirectoryService
+{   
     public static string? SelectAndPrepareExportDirectory(string defaultFolderName)
     {
         var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -47,13 +46,9 @@ public class ExportDirectoryService
             return true;
         }
 
-        var result = WpfMessageBox.Show(
+        return MessageBoxService.ShowConfirmation(
             "Der ausgewählte Ordner ist nicht leer. Alle vorhandenen Dateien in diesem Ordner werden gelöscht. Fortfahren?",
-            "Ordner nicht leer",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning);
-
-        return result == System.Windows.MessageBoxResult.Yes;
+            "Ordner nicht leer");
     }
 
     private static void PrepareDirectory(string directory)
