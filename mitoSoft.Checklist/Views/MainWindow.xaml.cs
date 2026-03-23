@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using WpfCheckBox = System.Windows.Controls.CheckBox;
+using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace mitoSoft.Checklist;
 
@@ -220,7 +221,30 @@ public partial class MainWindow : Window
 
     private void NumberBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        e.Handled = !e.Text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        if (sender is not WpfTextBox textBox)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (!e.Text.All(c => char.IsDigit(c) || c == ','))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        // Simuliere den Text nach der Eingabe
+        string text = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+
+        // Leerer Text ist OK (Benutzer kann löschen)
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            e.Handled = false;
+            return;
+        }
+
+        // Blockiere Eingabe, wenn keine gültige Zahl
+        e.Handled = !double.TryParse(text, out _);
     }
 
     private void TextInput_Changed(object sender, TextChangedEventArgs e)
