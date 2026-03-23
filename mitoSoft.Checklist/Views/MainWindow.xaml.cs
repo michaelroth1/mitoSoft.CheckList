@@ -182,7 +182,7 @@ public partial class MainWindow : Window
 
     private void NumberBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        e.Handled = e.Text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        e.Handled = !e.Text.All(c => char.IsDigit(c) || c == ',' || c == '.');
     }
 
     private void TextInput_Changed(object sender, TextChangedEventArgs e)
