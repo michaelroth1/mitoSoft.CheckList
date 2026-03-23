@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private bool _isTabletMode = false;
     private UiModeManager? _uiModeManager;
     private CameraService? _cameraService;
+    private ExportDirectoryService? _exportDirectoryService;
 
     public MainWindow()
     {
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
         {
             _uiModeManager = new UiModeManager(this);
             _cameraService = new CameraService();
+            _exportDirectoryService = new ExportDirectoryService();
             _uiModeManager.ApplyMode(false);
             ClearWizard();
             UpdateButtonState();
@@ -46,7 +48,6 @@ public partial class MainWindow : Window
         // Buttons requiring a loaded plan
         btnSave.IsEnabled = hasPlan;
         btnSaveAs.IsEnabled = hasPlan;
-        btnAttachPhoto.IsEnabled = hasPlan;
         btnExportPdf.IsEnabled = hasPlan;
 
         if (!hasPlan)
@@ -177,7 +178,8 @@ public partial class MainWindow : Window
 
         if (!string.IsNullOrEmpty(task.PhotoPath))
         {
-            var link = _uiModeManager!.CreatePhotoLink(index, task.PhotoPath, Link_Click);
+            var link = _uiModeManager!.CreatePhotoLinkLabel(index, task.PhotoPath, LinkLabel_Clicked);
+
             panel.Children.Add(link);
         }
 
@@ -186,12 +188,7 @@ public partial class MainWindow : Window
 
     private void NumberBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        e.Handled = !IsNumericInput(e.Text);
-    }
-
-    private static bool IsNumericInput(string text)
-    {
-        return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        e.Handled = e.Text.All(c => char.IsDigit(c) || c == ',' || c == '.');
     }
 
     private void TextInput_Changed(object sender, TextChangedEventArgs e)
@@ -206,13 +203,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Link_Click(int taskIndex)
+    private void LinkLabel_Clicked(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (!ValidateTaskIndex(taskIndex)) return;
+        if (sender is TextBlock link && link.Tag is int taskIndex)
+        {
+            if (!ValidateTaskIndex(taskIndex)) return;
 
-        var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
-        var file = new FileInfo(task.PhotoPath!);
-        file.TryShowPhoto();
+            var task = _plan!.Steps[_currentIndex].Tasks[taskIndex];
+            var file = new FileInfo(task.PhotoPath!);
+            file.TryShowPhoto();
+        }
     }
 
     private void TaskCheck_Changed(object sender, RoutedEventArgs e)
@@ -281,9 +281,9 @@ public partial class MainWindow : Window
     private bool ValidateTaskIndex(int taskIndex)
     {
         return _plan != null
-            && _currentIndex >= 0 
-            && _currentIndex < _plan.Steps.Count 
-            && taskIndex >= 0 
+            && _currentIndex >= 0
+            && _currentIndex < _plan.Steps.Count
+            && taskIndex >= 0
             && taskIndex < _plan.Steps[_currentIndex].Tasks.Count;
     }
 
@@ -335,7 +335,7 @@ public partial class MainWindow : Window
 
                 if (photoLink == null)
                 {
-                    var link = _uiModeManager!.CreatePhotoLink(taskIndex, photoPath, Link_Click);
+                    var link = _uiModeManager!.CreatePhotoLinkLabel(taskIndex, photoPath, LinkLabel_Clicked);
                     panel.Children.Add(link);
                 }
             }
@@ -505,39 +505,25 @@ public partial class MainWindow : Window
 
     private void btnExportPdf_Click(object sender, RoutedEventArgs e)
     {
-        var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var name = _plan!
+        var defaultFolderName = _plan!
             .GetDefaultFileName()
             .GetFileNameWithoutExtension();
-        var exportFolder = System.IO.Path.Combine(root, "Wartungen", name);
 
-        Directory.CreateDirectory(exportFolder);
+        var exportFolder = ExportDirectoryService
+            .SelectAndPrepareExportDirectory(defaultFolderName);
 
-        var dialog = new System.Windows.Forms.FolderBrowserDialog
-        {
-            Description = "Wähle Zielordner für Export (Fotos und Bericht werden dort abgelegt)",
-            SelectedPath = exportFolder
-        };
+        if (exportFolder == null) return;
 
-        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+        TryExport(exportFolder);
+    }
 
-        exportFolder = dialog.SelectedPath;
-
-        if (Directory.Exists(exportFolder) && Directory.EnumerateFileSystemEntries(exportFolder).Any())
-        {
-            var res = WpfMessageBox.Show(
-                "Der ausgewählte Ordner ist nicht leer. Alle vorhandenen Dateien in diesem Ordner werden gelöscht. Fortfahren?",
-                "Ordner nicht leer", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (res != MessageBoxResult.Yes) return;
-        }
-
+    private void TryExport(string exportFolder)
+    {
         try
         {
-            Directory.Delete(exportFolder, true);
-            System.Threading.Thread.Sleep(500);
-            Directory.CreateDirectory(exportFolder);
+            var photoDir = Path.Combine(exportFolder, "Photos");
 
-            CopyPhotos(exportFolder);
+            this._plan!.CopyPhotos(photoDir);
 
             var pdfPath = Path.Combine(exportFolder, "Wartungsbericht.pdf");
             var exporter = new PdfExporter(pdfPath);
@@ -548,113 +534,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            WpfMessageBox.Show($"Fehler beim Export: {ex.Message}", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private void CopyPhotos(string exportFolder)
-    {
-        var photosDir = Path.Combine(exportFolder, "Photos");
-        Directory.CreateDirectory(photosDir);
-
-        foreach (var step in _plan!.Steps)
-        {
-            foreach (var task in step.Tasks)
-            {
-                if (!string.IsNullOrEmpty(task.PhotoPath) && File.Exists(task.PhotoPath))
-                {
-                    try
-                    {
-                        var dest = Path.Combine(photosDir, Path.GetFileName(task.PhotoPath));
-                        File.Copy(task.PhotoPath, dest, true);
-                    }
-                    catch { }
-                }
-            }
-        }
-    }
-
-    private void btnAttachPhoto_Click(object sender, RoutedEventArgs e)
-    {
-        int selIndex = FindSelectedTaskIndex();
-
-        if (!ValidateTaskIndex(selIndex))
-        {
-            WpfMessageBox.Show("Bitte zuerst eine Aufgabe auswählen.", "Foto anhängen",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        var selectedTask = _plan!.Steps[_currentIndex].Tasks[selIndex];
-        var saveDirectory = GetPhotoSaveDirectory();
-
-        var useCamera = WpfMessageBox.Show("Foto aufnehmen mit Kamera? (Nein = Aus Datei wählen)", "Fotoquelle",
-            MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-
-        if (useCamera == MessageBoxResult.Cancel) return;
-
-        string? sourcePath = useCamera == MessageBoxResult.Yes
-            ? _cameraService!.CapturePhotoFromCamera(status => lblStatus.Text = status)
-            : _cameraService!.SelectPhotoFromFile(updateStatus: status => lblStatus.Text = status);
-
-        if (string.IsNullOrEmpty(sourcePath)) return;
-
-        SavePhotoToTaskDirectory(sourcePath, saveDirectory, selectedTask);
-    }
-
-    private int FindSelectedTaskIndex()
-    {
-        foreach (var panel in spTasks.Children.OfType<StackPanel>())
-        {
-            foreach (var child in panel.Children)
-            {
-                if (child is WpfCheckBox cb && cb.IsFocused && cb.Tag is int tag)
-                {
-                    return tag;
-                }
-            }
-        }
-        return -1;
-    }
-
-    private string GetPhotoSaveDirectory()
-    {
-        var currentStep = _plan!.Steps[_currentIndex];
-        var planName = "UnnamedPlan";
-
-        if (!string.IsNullOrEmpty(_plan.Path))
-        {
-            planName = _plan.Path.ToFileInfo().GetFileNameWithoutExtension();
-        }
-        else if (!string.IsNullOrEmpty(currentStep.Title))
-        {
-            planName = currentStep.Title.Replace(' ', '_');
-        }
-
-        var datePart = DateTime.Now.ToString("yyyy-MM-dd");
-        var directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Records", datePart + "_" + planName);
-        Directory.CreateDirectory(directory);
-        return directory;
-    }
-
-    private void SavePhotoToTaskDirectory(string sourcePath, string directory, MaintenanceTask task)
-    {
-        try
-        {
-            var fileName = Path.GetFileName(sourcePath);
-            var destPath = Path.Combine(directory, fileName);
-            File.Copy(sourcePath, destPath, overwrite: true);
-
-            task.PhotoPath = destPath;
-            task.Done = true;
-
-            lblStatus.Text = "Foto gespeichert.";
-        }
-        catch (Exception ex)
-        {
-            WpfMessageBox.Show($"Fehler beim Speichern des Fotos: {ex.Message}", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            throw new Exception($"Fehler beim Export: {ex.Message}.");
         }
     }
 }

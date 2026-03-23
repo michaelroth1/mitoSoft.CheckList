@@ -151,12 +151,6 @@
                         IsEnabled="False"
                         Click="btnSaveAs_Click"
                         ToolTip="Speichern unter..."/>
-                <Button x:Name="btnAttachPhoto" 
-                        Content="📷" 
-                        Style="{StaticResource MainButtonStyle}"
-                        IsEnabled="False"
-                        Click="btnAttachPhoto_Click"
-                        ToolTip="Foto"/>
                 <Button x:Name="btnExportPdf" 
                         Content="📄" 
                         Style="{StaticResource MainButtonStyle}"

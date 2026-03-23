@@ -196,7 +196,7 @@ public class UiModeManager
         return checkbox;
     }
 
-    public WpfTextBlock CreatePhotoLink(int taskIndex, string photoPath, Action<int> clickHandler)
+    public WpfTextBlock CreatePhotoLinkLabel(int taskIndex, string photoPath, System.Windows.Input.MouseButtonEventHandler clickHandler)
     {
         var link = new WpfTextBlock
         {
@@ -209,7 +209,7 @@ public class UiModeManager
             VerticalAlignment = VerticalAlignment.Center,
             ToolTip = photoPath
         };
-        link.MouseLeftButtonUp += (s, e) => clickHandler(taskIndex);
+        link.MouseLeftButtonUp += clickHandler;
         return link;
     }
 
