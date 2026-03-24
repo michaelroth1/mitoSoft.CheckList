@@ -332,6 +332,12 @@ public partial class MainWindow : Window
         var selectedTask = _plan.Steps[_currentIndex].Tasks[taskIndex];
         var photoPath = CameraService.CapturePhotoFromCamera(status => lblStatus.Text = status);
 
+        // Bring the application back to foreground after photo capture
+        this.Activate();
+        this.Topmost = true;
+        this.Topmost = false;
+        this.Focus();
+
         if (!string.IsNullOrEmpty(photoPath))
         {
             TryLinkPhotoWithTask(taskIndex, selectedTask, photoPath);
