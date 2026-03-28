@@ -10,6 +10,7 @@
     <StartupObject>mitoSoft.Checklist.Program</StartupObject>
     <AssemblyName>Checklist</AssemblyName>
     <ApplicationIcon>Resources\WVE.ico</ApplicationIcon>
+    <Version>1.7.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
