@@ -7,7 +7,9 @@ on:
 jobs:
   release:
     runs-on: windows-latest
-    
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
       
@@ -60,3 +62,4 @@ jobs:
           name: Release v${{ steps.version.outputs.version }}
           files: Checklist.zip
           generate_release_notes: true
+          token: ${{ secrets.RELEASE_TOKEN }}
