@@ -4,8 +4,6 @@ using mitoSoft.Checklist.Models;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using WpfCheckBox = System.Windows.Controls.CheckBox;
-using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace mitoSoft.Checklist;
 
@@ -260,7 +258,7 @@ public partial class MainWindow : Window
 
     private void NumberBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        if (sender is not WpfTextBox textBox)
+        if (sender is not TextBox textBox)
         {
             e.Handled = true;
             return;
@@ -312,7 +310,7 @@ public partial class MainWindow : Window
 
     private void TaskCheck_Changed(object sender, RoutedEventArgs e)
     {
-        if (sender is WpfCheckBox chk && chk.Tag is int idx)
+        if (sender is CheckBox chk && chk.Tag is int idx)
         {
             if (_plan == null || !_plan.IsValidTaskIndex(_currentIndex, idx)) return;
 
@@ -406,12 +404,12 @@ public partial class MainWindow : Window
     {
         foreach (var panel in spTasks.Children.OfType<StackPanel>())
         {
-            WpfCheckBox? checkbox = null;
+            CheckBox? checkbox = null;
             TextBlock? photoLink = null;
 
             foreach (var child in panel.Children)
             {
-                if (child is WpfCheckBox cb && cb.Tag is int tag && tag == taskIndex)
+                if (child is CheckBox cb && cb.Tag is int tag && tag == taskIndex)
                 {
                     checkbox = cb;
                 }

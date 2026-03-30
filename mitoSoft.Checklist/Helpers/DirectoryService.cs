@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.IO;
 
 namespace mitoSoft.Checklist.Helpers;
@@ -28,14 +29,14 @@ public static class DirectoryService
 
     private static string? ShowFolderBrowserDialog(string initialDirectory)
     {
-        var dialog = new System.Windows.Forms.FolderBrowserDialog
+        var dialog = new OpenFolderDialog
         {
-            Description = "Wähle Zielordner für Export (Fotos und Bericht werden dort abgelegt)",
-            SelectedPath = initialDirectory
+            Title = "Wähle Zielordner für Export (Fotos und Bericht werden dort abgelegt)",
+            InitialDirectory = initialDirectory
         };
 
-        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK 
-            ? dialog.SelectedPath 
+        return dialog.ShowDialog() == true 
+            ? dialog.FolderName 
             : null;
     }
 
