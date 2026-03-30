@@ -26,7 +26,46 @@ public partial class MainWindow : Window
             _uiModeManager.ApplyMode(false);
             ClearWizard();
             UpdateButtonState();
+            LoadWindowSettings();
         }
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        SaveWindowSettings();
+    }
+
+    private void LoadWindowSettings()
+    {
+        var settings = Properties.Settings.Default;
+
+        Width = settings.WindowWidth;
+        Height = settings.WindowHeight;
+        Left = settings.WindowLeft;
+        Top = settings.WindowTop;
+
+        if (settings.WindowState != System.Windows.WindowState.Minimized)
+        {
+            WindowState = settings.WindowState;
+        }
+    }
+
+    private void SaveWindowSettings()
+    {
+        var settings = Properties.Settings.Default;
+
+        settings.WindowState = WindowState;
+
+        if (WindowState == System.Windows.WindowState.Normal)
+        {
+            settings.WindowWidth = Width;
+            settings.WindowHeight = Height;
+            settings.WindowLeft = Left;
+            settings.WindowTop = Top;
+        }
+
+        settings.Save();
     }
 
     #region Button Click Event Handlers
